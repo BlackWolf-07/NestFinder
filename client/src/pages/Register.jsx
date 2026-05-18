@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { registerUser } from '../api/auth';
 import useAuthStore from '../store/authStore';
 import { Card, PremiumButton } from '../components/UIElements';
-import { User, Mail, Lock, Phone, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, Phone, ArrowRight, Home } from 'lucide-react';
 import Navbar from '../components/Navbar';
 
 const schema = z.object({
@@ -19,11 +19,11 @@ const schema = z.object({
 });
 
 export default function Register() {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { role: 'buyer' }
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); const selectedRole = watch('role');
   const setAuth = useAuthStore((state) => state.setAuth);
   const navigate = useNavigate();
 
@@ -102,7 +102,7 @@ export default function Register() {
                   {...register('password')}
                   type="password"
                   className={`w-full pl-12 pr-4 py-3 bg-background border rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold ${errors.password ? 'border-red-500' : 'border-border focus:border-primary'}`}
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 />
               </div>
               {errors.password && <p className="text-red-500 text-xs font-bold px-1">{errors.password.message}</p>}
@@ -111,14 +111,14 @@ export default function Register() {
             <div className="space-y-2">
               <label className="text-sm font-black text-text-muted uppercase px-1">I am a</label>
               <div className="grid grid-cols-2 gap-4">
-                <label className={`cursor-pointer border-2 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all ${register('role').value === 'buyer' ? 'border-primary bg-primary/5' : 'border-border hover:bg-gray-50'}`}>
+                <label className={`cursor-pointer border-2 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all ${selectedRole === 'buyer' ? 'border-primary bg-primary/5' : 'border-border hover:bg-gray-50'}`}>
                   <input {...register('role')} type="radio" value="buyer" className="hidden" />
-                  <User className={`w-6 h-6 ${register('role').value === 'buyer' ? 'text-primary' : 'text-text-muted'}`} />
+                  <User className={`w-6 h-6 ${selectedRole === 'buyer' ? 'text-primary' : 'text-text-muted'}`} />
                   <span className="font-bold">Buyer</span>
                 </label>
-                <label className={`cursor-pointer border-2 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all ${register('role').value === 'owner' ? 'border-primary bg-primary/5' : 'border-border hover:bg-gray-50'}`}>
+                <label className={`cursor-pointer border-2 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all ${selectedRole === 'owner' ? 'border-primary bg-primary/5' : 'border-border hover:bg-gray-50'}`}>
                   <input {...register('role')} type="radio" value="owner" className="hidden" />
-                  <Home className={`w-6 h-6 ${register('role').value === 'owner' ? 'text-primary' : 'text-text-muted'}`} />
+                  <Home className={`w-6 h-6 ${selectedRole === 'owner' ? 'text-primary' : 'text-text-muted'}`} />
                   <span className="font-bold">Owner</span>
                 </label>
               </div>
