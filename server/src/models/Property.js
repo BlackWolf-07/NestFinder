@@ -1,0 +1,130 @@
+const db = require('../config/db');
+
+const Property = {
+  create: async (propertyData) => {
+    const {
+      ownerId, title, type, category, location, city, locality,
+      latitude, longitude, price, bhk, furnishing, amenities,
+      description, images
+    } = propertyData;
+
+    const [result] = await db.execute(
+      `INSERT INTO properties (
+        ownerId, title, type, category, location, city, locality,
+        latitude, longitude, price, bhk, furnishing, amenities,
+        description, images
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        ownerId, title, type, category, location, city, locality,
+        latitude, longitude, price, bhk, furnishing, JSON.stringify(amenities),
+        description, JSON.stringify(images)
+      ]
+    );
+    return result.insertId;
+  },
+
+  getAll: async (filters = {}) => {
+    let query = 'SELECT * FROM properties WHERE status = "available"';
+    const params = [];
+
+    if (filters.city) {
+      query += ' AND city LIKE ?';
+      params.push(`%${filters.city}%`);
+    }
+    if (filters.locality) {
+      query += ' AND locality LIKE ?';
+      params.push(`%${filters.locality}%`);
+    }
+    if (filters.type) {
+      query += ' AND type = ?';
+      params.push(filters.type);
+    }
+    if (filters.category) {
+      query += ' AND category = ?';
+      params.push(filters.category);
+    }
+    if (filters.minPrice) {
+      query += ' AND price >= ?';
+      params.push(filters.minPrice);
+    }
+    if (filters.maxPrice) {
+      query += ' AND price <= ?';
+      params.push(filters.maxPrice);
+    }
+    if (filters.bhk) {
+      query += ' AND bhk = ?';
+      params.push(filters.bhk);
+    }
+    if (filters.furnishing) {
+      query += ' AND furnishing = ?';
+      params.push(filters.furnishing);
+    }
+
+    const [rows] = await db.execute(query, params);
+    
+    // Client-side filtering for amenities (since it's a JSON array in MySQL)
+    if (filters.amenities && Array.isArray(filters.amenities)) {
+      return rows.filter(row => {
+        const propertyAmenities = typeof row.amenities === 'string' ? JSON.parse(row.amenities) : row.amenities;
+        return filters.amenities.every(a => propertyAmenities.includes(a));
+      });
+    }
+
+    return rows;
+  },
+
+  getByOwner: async (ownerId) => {
+    const [rows] = await db.execute('SELECT * FROM properties WHERE ownerId = ?', [ownerId]);
+    return rows;
+  },
+
+  getById: async (id) => {
+    const [rows] = await db.execute('SELECT * FROM properties WHERE id = ?', [id]);
+    return rows[0];
+  },
+
+  update: async (id, updateData) => {
+    const fields = Object.keys(updateData);
+    const params = Object.values(updateData).map(val => 
+      (typeof val === 'object') ? JSON.stringify(val) : val
+    );
+    
+    const setClause = fields.map(field => `${field} = ?`).join(', ');
+    params.push(id);
+
+    await db.execute(`UPDATE properties SET ${setClause} WHERE id = ?`, params);
+  },
+
+  delete: async (id) => {
+    await db.execute('DELETE FROM properties WHERE id = ?', [id]);
+  },
+
+  initTable: async () => {
+    const query = `
+      CREATE TABLE IF NOT EXISTS properties (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ownerId INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        type ENUM('rent', 'buy') NOT NULL,
+        category ENUM('flat', 'house', 'PG', 'hostel', 'commercial') NOT NULL,
+        location TEXT NOT NULL,
+        city VARCHAR(100) NOT NULL,
+        locality VARCHAR(100) NOT NULL,
+        latitude DECIMAL(10, 8),
+        longitude DECIMAL(11, 8),
+        price DECIMAL(15, 2) NOT NULL,
+        bhk INT,
+        furnishing ENUM('unfurnished', 'semi-furnished', 'fully-furnished') DEFAULT 'unfurnished',
+        amenities JSON,
+        description TEXT,
+        images JSON,
+        status ENUM('available', 'rented', 'sold') DEFAULT 'available',
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ownerId) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `;
+    await db.execute(query);
+  }
+};
+
+module.exports = Property;
