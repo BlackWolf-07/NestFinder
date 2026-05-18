@@ -20,8 +20,8 @@ exports.createProperty = async (req, res) => {
 
 exports.getProperties = async (req, res) => {
   try {
-    const properties = await Property.getAll(req.query);
-    res.json(properties);
+    const data = await Property.getAll(req.query);
+    res.json(data);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch properties' });
   }

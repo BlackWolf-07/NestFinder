@@ -1,74 +1,110 @@
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Sparkles, MapPin, ArrowRight, RefreshCw, Zap } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import { Card, PremiumButton, Badge } from '../components/UIElements';
 
 export default function Recommendations() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { recommendations, preferences } = location.state || { recommendations: [], preferences: {} };
 
   return (
-    <div className="bg-gray-50 min-h-screen py-16 px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-12">
-          <h1 className="text-4xl font-extrabold text-secondary mb-4">AI Top Matches for You</h1>
-          <p className="text-gray-500 text-lg">
-            Based on your preference for a {preferences.bhk} BHK in {preferences.city} for {preferences.type}.
+    <div className="bg-background min-h-screen">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="mb-16">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3 text-primary font-black uppercase tracking-widest text-sm mb-4"
+          >
+            <Sparkles className="w-5 h-5" /> AI Curated Matches
+          </motion.div>
+          <h1 className="text-5xl font-black tracking-tight text-secondary dark:text-white mb-4">Your Intelligent Nest Selection</h1>
+          <p className="text-text-muted text-xl font-medium max-w-2xl">
+            Our discovery engine has analyzed {recommendations.length} potential nests in {preferences.city || 'your area'} to find these top matches for you.
           </p>
         </div>
 
         {recommendations.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl shadow-sm border">
-            <p className="text-gray-500 text-xl">No exact AI matches found. Try broadening your preferences!</p>
-            <Link to="/onboarding" className="mt-4 inline-block text-primary font-bold">Restart Onboarding</Link>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-40 bg-card rounded-[40px] border-2 border-dashed border-border"
+          >
+            <div className="text-8xl mb-6 text-gray-300">🕵️</div>
+            <h3 className="text-3xl font-black mb-4">No Perfect Matches Found</h3>
+            <p className="text-text-muted max-w-sm mx-auto mb-10 text-lg">We couldn't find exact matches for your criteria. Let's try refining your preferences.</p>
+            <PremiumButton onClick={() => navigate('/onboarding')} className="flex items-center gap-2 mx-auto">
+              <RefreshCw className="w-5 h-5" /> Restart AI Onboarding
+            </PremiumButton>
+          </motion.div>
         ) : (
-          <div className="space-y-10">
+          <div className="grid gap-12">
             {recommendations.map((property, idx) => (
-              <div key={property.id} className="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col lg:flex-row border border-gray-100 hover:border-primary transition duration-500">
-                <div className="lg:w-1/3 h-64 lg:h-auto relative">
-                  <img 
-                    src={property.images && JSON.parse(property.images)[0] ? `http://localhost:5000${JSON.parse(property.images)[0]}` : 'https://via.placeholder.com/600x400'} 
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-6 left-6 bg-white/90 backdrop-blur px-4 py-2 rounded-xl text-secondary font-bold shadow-lg">
-                    Match #{idx + 1}
-                  </div>
-                </div>
-                
-                <div className="flex-1 p-10 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <h2 className="text-3xl font-bold text-secondary">{property.title}</h2>
-                      <span className="text-3xl font-extrabold text-primary">${property.price}</span>
-                    </div>
-                    <p className="text-gray-500 mb-6 flex items-center">
-                      <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      </svg>
-                      {property.locality}, {property.city}
-                    </p>
-
-                    <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 relative mb-8">
-                      <div className="absolute -top-3 left-6 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-                        AI Recommendation Insight
+              <motion.div 
+                key={property.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.15 }}
+              >
+                <Card className="flex flex-col lg:flex-row overflow-hidden hover:border-primary transition-all duration-500 group">
+                  <div className="lg:w-2/5 h-[400px] lg:h-auto relative overflow-hidden">
+                    <img 
+                      src={property.images && JSON.parse(property.images)[0] ? `http://localhost:5000${JSON.parse(property.images)[0]}` : 'https://via.placeholder.com/800x600'} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent lg:hidden" />
+                    <div className="absolute top-8 left-8">
+                      <div className="bg-primary text-white w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shadow-2xl">
+                        {idx + 1}
                       </div>
-                      <p className="text-secondary leading-relaxed italic">
-                        "{property.aiReason}"
-                      </p>
                     </div>
                   </div>
+                  
+                  <div className="flex-1 p-12 flex flex-col justify-between bg-card relative">
+                    <div className="absolute top-0 right-0 p-8">
+                      <Badge variant="success" className="!px-4 !py-2 text-sm shadow-xl">
+                        <Zap className="w-4 h-4 inline mr-1 fill-current" /> High Compatibility
+                      </Badge>
+                    </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Link 
-                      to={`/properties/${property.id}`}
-                      className="flex-1 bg-secondary text-white text-center py-4 rounded-xl font-bold hover:bg-gray-800 transition"
-                    >
-                      View Full Details
-                    </Link>
-                    <button className="flex-1 border-2 border-secondary text-secondary py-4 rounded-xl font-bold hover:bg-gray-50 transition">
-                      Schedule a Call
-                    </button>
+                    <div>
+                      <div className="mb-6">
+                        <h2 className="text-4xl font-black text-secondary dark:text-white tracking-tight mb-2 group-hover:text-primary transition-colors">{property.title}</h2>
+                        <p className="text-text-muted text-lg font-bold flex items-center">
+                          <MapPin className="text-primary mr-2 w-5 h-5" />
+                          {property.locality}, {property.city}
+                        </p>
+                      </div>
+
+                      <div className="bg-primary/5 p-8 rounded-[32px] border border-primary/10 mb-10 relative">
+                        <div className="absolute -top-3 left-8 bg-primary text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                          Discovery Insight
+                        </div>
+                        <p className="text-secondary dark:text-white leading-relaxed italic text-lg font-medium">
+                          "{property.aiReason}"
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-8 pt-8 border-t border-border">
+                      <div className="text-center sm:text-left">
+                        <p className="text-xs font-black text-text-muted uppercase tracking-widest mb-1">Estimated Investment</p>
+                        <p className="text-4xl font-black text-primary tracking-tighter">${Number(property.price).toLocaleString()}</p>
+                      </div>
+                      <div className="flex gap-4 w-full sm:w-auto">
+                        <Link to={`/properties/${property.id}`} className="flex-1 sm:flex-initial">
+                          <PremiumButton className="w-full flex items-center justify-center gap-2 group/btn !rounded-2xl !px-10 py-5 text-lg">
+                            Take a Tour <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                          </PremiumButton>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </Card>
+              </motion.div>
             ))}
           </div>
         )}

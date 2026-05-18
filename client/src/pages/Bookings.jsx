@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
-import { getMyBookings, updateBookingStatus, downloadAgreement } from '../api/booking';
+import { getMyBookings, updateBookingStatus } from '../api/booking';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import Navbar from '../components/Navbar';
+import { Card, PremiumButton, Badge, Skeleton } from '../components/UIElements';
 import useAuthStore from '../store/authStore';
+import { Calendar, Clock, MapPin, CheckCircle, XCircle, MoreVertical } from 'lucide-react';
 
 export default function Bookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuthStore();
+  const user = useAuthStore(state => state.user);
 
   useEffect(() => {
     fetchBookings();
@@ -16,7 +21,7 @@ export default function Bookings() {
       const data = await getMyBookings();
       setBookings(data);
     } catch (err) {
-      console.error(err);
+      toast.error('Failed to load bookings');
     } finally {
       setLoading(false);
     }
@@ -25,100 +30,111 @@ export default function Bookings() {
   const handleStatusUpdate = async (id, status) => {
     try {
       await updateBookingStatus(id, status);
-      setBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
+      toast.success(`Booking ${status} successfully`);
+      fetchBookings();
     } catch (err) {
-      alert('Update failed');
-    }
-  };
-
-  const handleDownload = async (id) => {
-    try {
-      await downloadAgreement(id);
-    } catch (err) {
-      alert('Download failed');
+      toast.error('Failed to update status');
     }
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen bg-gray-50">
-      <h1 className="text-4xl font-extrabold text-secondary mb-10">
-        {user.role === 'owner' ? 'Manage Visits' : 'My Scheduled Visits'}
-      </h1>
-
-      {loading ? (
-        <div className="text-center py-20 text-xl text-gray-400">Loading bookings...</div>
-      ) : bookings.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border shadow-sm">
-          <p className="text-gray-500 text-lg">No visits scheduled yet.</p>
+    <div className="bg-background min-h-screen">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="mb-12">
+          <h1 className="text-4xl font-black tracking-tight text-secondary dark:text-white">Scheduled Tours</h1>
+          <p className="text-text-muted font-medium mt-2">Manage your property visits and tour requests.</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {bookings.map(booking => (
-            <div key={booking.id} className="bg-white p-6 rounded-3xl shadow-sm border flex flex-col md:flex-row justify-between items-center hover:shadow-md transition">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                    booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
-                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {booking.status}
-                  </span>
-                  <h3 className="text-xl font-bold text-secondary">{booking.title}</h3>
-                </div>
-                <p className="text-gray-500 mb-2">
-                  📍 {booking.locality}, {booking.city}
-                </p>
-                <p className="text-secondary font-semibold">
-                  📅 {new Date(booking.visitDate).toLocaleDateString()} at {booking.visitTime}
-                </p>
-                {user.role === 'owner' && (
-                  <p className="mt-2 text-sm text-primary font-bold">
-                    User: {booking.userName} ({booking.userPhone})
-                  </p>
-                )}
-              </div>
 
-              <div className="mt-6 md:mt-0 flex flex-wrap gap-3">
-                {user.role === 'owner' && booking.status === 'pending' && (
-                  <>
-                    <button 
-                      onClick={() => handleStatusUpdate(booking.id, 'confirmed')}
-                      className="bg-green-500 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-600 transition"
-                    >
-                      Confirm
-                    </button>
-                    <button 
-                      onClick={() => handleStatusUpdate(booking.id, 'cancelled')}
-                      className="bg-red-50 text-red-600 px-6 py-2 rounded-xl font-bold hover:bg-red-100 transition"
-                    >
-                      Decline
-                    </button>
-                  </>
-                )}
-                
-                {booking.status === 'confirmed' && (
-                  <button 
-                    onClick={() => handleDownload(booking.id)}
-                    className="bg-secondary text-white px-6 py-2 rounded-xl font-bold hover:bg-gray-800 transition flex items-center"
-                  >
-                    <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Rental Agreement
-                  </button>
-                )}
+        {loading ? (
+          <div className="space-y-6">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40" />)}
+          </div>
+        ) : bookings.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-40 bg-card rounded-[40px] border-2 border-dashed border-border"
+          >
+            <div className="text-7xl mb-6 text-gray-300">📅</div>
+            <h3 className="text-2xl font-black mb-2">No Scheduled Tours</h3>
+            <p className="text-text-muted max-w-sm mx-auto">Your upcoming property visits will appear here once you've requested a tour.</p>
+          </motion.div>
+        ) : (
+          <div className="grid gap-6">
+            {bookings.map((booking, idx) => (
+              <motion.div
+                key={booking.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Card className="p-8 flex flex-col md:flex-row items-center gap-8 group">
+                  {/* Property Preview */}
+                  <div className="w-full md:w-48 h-32 rounded-2xl overflow-hidden flex-shrink-0 border border-border">
+                    <img 
+                      src={booking.propertyImage ? `http://localhost:5000${booking.propertyImage}` : 'https://via.placeholder.com/200x150'} 
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
+                    />
+                  </div>
 
-                {user.role === 'buyer' && booking.status === 'confirmed' && (
-                  <button className="bg-primary text-white px-6 py-2 rounded-xl font-bold hover:bg-blue-600 transition">
-                    Pay Deposit
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                  {/* Booking Info */}
+                  <div className="flex-1 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-2xl font-black tracking-tight group-hover:text-primary transition-colors">{booking.propertyTitle}</h3>
+                        <p className="text-text-muted font-bold flex items-center text-sm mt-1">
+                          <MapPin className="w-4 h-4 mr-1 text-primary" /> {booking.locality}, {booking.city}
+                        </p>
+                      </div>
+                      <Badge variant={
+                        booking.status === 'approved' ? 'success' : 
+                        booking.status === 'rejected' ? 'error' : 'warning'
+                      }>
+                        {booking.status}
+                      </Badge>
+                    </div>
+
+                    <div className="flex flex-wrap gap-6 items-center pt-2">
+                      <div className="flex items-center gap-2 text-text-main font-black">
+                        <Calendar className="w-5 h-5 text-primary" />
+                        {new Date(booking.visitDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </div>
+                      <div className="flex items-center gap-2 text-text-main font-black">
+                        <Clock className="w-5 h-5 text-primary" />
+                        {booking.visitTime}
+                      </div>
+                      <div className="text-text-muted text-sm font-bold border-l border-border pl-6">
+                        Contact: {booking.buyerName || booking.ownerName}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions for Owner */}
+                  {user.role === 'owner' && booking.status === 'pending' && (
+                    <div className="flex gap-2 w-full md:w-auto">
+                      <button 
+                        onClick={() => handleStatusUpdate(booking.id, 'approved')}
+                        className="p-4 bg-green-500/10 text-green-600 rounded-2xl hover:bg-green-500 hover:text-white transition-all"
+                        title="Approve Tour"
+                      >
+                        <CheckCircle className="w-6 h-6" />
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate(booking.id, 'rejected')}
+                        className="p-4 bg-red-500/10 text-red-600 rounded-2xl hover:bg-red-500 hover:text-white transition-all"
+                        title="Reject Tour"
+                      >
+                        <XCircle className="w-6 h-6" />
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
