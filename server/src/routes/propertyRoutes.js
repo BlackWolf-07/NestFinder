@@ -8,11 +8,11 @@ const { auth, authorize } = require('../middlewares/auth');
 const upload = require('../utils/upload');
 
 router.get('/', getProperties);
-router.get('/my', auth, authorize('owner', 'admin'), getMyProperties);
+router.get('/my', auth, getMyProperties);
 router.get('/:id', getPropertyDetails);
 
-router.post('/', auth, authorize('owner', 'admin'), upload.array('images', 10), createProperty);
-router.put('/:id', auth, authorize('owner', 'admin'), updateProperty);
-router.delete('/:id', auth, authorize('owner', 'admin'), deleteProperty);
+router.post('/create', auth, upload.array('images', 10), createProperty);
+router.put('/:id', auth, updateProperty);
+router.delete('/:id', auth, deleteProperty);
 
 module.exports = router;

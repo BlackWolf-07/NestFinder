@@ -7,7 +7,10 @@ exports.createProperty = async (req, res) => {
       ...req.body,
       ownerId: req.user.id,
       images,
-      amenities: typeof req.body.amenities === 'string' ? JSON.parse(req.body.amenities) : req.body.amenities
+      amenities: typeof req.body.amenities === 'string' ? JSON.parse(req.body.amenities) : req.body.amenities,
+      location: req.body.location || `${req.body.locality}, ${req.body.city}`,
+      latitude: req.body.latitude || null,
+      longitude: req.body.longitude || null
     };
 
     const id = await Property.create(propertyData);

@@ -36,40 +36,40 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/recommendations" element={<Recommendations />} />
-            <Route 
-              path="/bookings" 
+            <Route
+              path="/bookings"
               element={
                 <ProtectedRoute>
                   <Bookings />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/properties/:id" element={<PropertyDetails />} />
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/add-property" 
+            <Route
+              path="/host/add-property"
               element={
-                <ProtectedRoute roles={['owner', 'admin']}>
+                <ProtectedRoute>
                   <AddProperty />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <ProtectedRoute roles={['admin']}>
                   <AdminDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route path="*" element={<NotFound />} />
           </Routes>

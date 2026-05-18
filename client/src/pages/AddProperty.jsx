@@ -1,178 +1,286 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { createProperty } from '../api/property';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { Upload, Home, MapPin, DollarSign, Info, Check, Plus, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { Card, PremiumButton, Skeleton } from '../components/UIElements';
-import { Upload, MapPin, DollarSign, Home, CheckCircle2 } from 'lucide-react';
+import API from '../api';
 
-const AMENITIES_LIST = ['WiFi', 'Parking', 'Gym', 'Lift', 'CCTV', 'Security', 'Pet Friendly', 'Swimming Pool', 'Garden'];
+const CATEGORIES = ['flat', 'house', 'PG', 'hostel', 'commercial'];
+const TYPES = ['rent', 'buy'];
+const FURNISHING = ['unfurnished', 'semi-furnished', 'fully-furnished'];
+const AMENITIES_LIST = ["WiFi", "Parking", "Gym", "Lift", "Security", "Pool", "Garden"];
+
+const schema = z.object({
+  title: z.string().min(5, 'Title must be at least 5 characters'),
+  type: z.enum(['rent', 'buy']),
+  category: z.enum(['flat', 'house', 'PG', 'hostel', 'commercial']),
+  city: z.string().min(2, 'City is required'),
+  locality: z.string().min(2, 'Locality is required'),
+  price: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Price must be a positive number'),
+  bhk: z.string().refine(val => !isNaN(Number(val)) && Number(val) >= 0, 'BHK must be a number'),
+  furnishing: z.enum(['unfurnished', 'semi-furnished', 'fully-furnished']),
+  description: z.string().min(20, 'Description must be at least 20 characters'),
+});
 
 export default function AddProperty() {
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { amenities: [] }
-  });
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
-  const navigate = useNavigate();
+  const [amenities, setAmenities] = useState([]);
+  const [previews, setPreviews] = useState([]);
+
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      type: 'rent',
+      category: 'flat',
+      furnishing: 'unfurnished'
+    }
+  });
 
   const handleImageChange = (e) => {
-    setImages(Array.from(e.target.files));
+    const files = Array.from(e.target.files);
+    if (files.length + images.length > 10) {
+      return toast.error('Maximum 10 images allowed');
+    }
+    setImages([...images, ...files]);
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setPreviews([...previews, ...newPreviews]);
+  };
+
+  const removeImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+    setPreviews(previews.filter((_, i) => i !== index));
+  };
+
+  const toggleAmenity = (amenity) => {
+    setAmenities(prev => 
+      prev.includes(amenity) 
+        ? prev.filter(a => a !== amenity) 
+        : [...prev, amenity]
+    );
   };
 
   const onSubmit = async (data) => {
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        if (key === 'amenities') {
-          formData.append(key, JSON.stringify(data[key]));
-        } else {
-          formData.append(key, data[key]);
-        }
-      });
-      
-      images.forEach(image => {
-        formData.append('images', image);
-      });
+    if (images.length === 0) {
+      return toast.error('Please upload at least one image');
+    }
 
-      await createProperty(formData);
-      toast.success('Property listed successfully! Awaiting admin approval.');
-      navigate('/dashboard');
+    setLoading(true);
+    const formData = new FormData();
+    Object.keys(data).forEach(key => formData.append(key, data[key]));
+    formData.append('amenities', JSON.stringify(amenities));
+    images.forEach(img => formData.append('images', img));
+
+    try {
+      await API.post('/properties/create', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Property listed successfully!');
+      navigate('/dashboard/my-properties');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to list property');
+      toast.error(err.response?.data?.error || 'Failed to create listing');
     } finally {
       setLoading(false);
     }
   };
 
-  const InputField = ({ label, icon: Icon, ...props }) => (
-    <div className="space-y-2">
-      <label className="text-xs font-black text-text-muted uppercase tracking-widest px-1">{label}</label>
-      <div className="relative">
-        {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />}
-        <input 
-          {...props}
-          className={`w-full ${Icon ? 'pl-12' : 'px-4'} pr-4 py-4 bg-background border border-border rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-bold focus:border-primary`}
-        />
-      </div>
-    </div>
-  );
-
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
-      <div className="max-w-5xl mx-auto px-6 py-16">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-black tracking-tight mb-2">List Your Premium Nest</h1>
-          <p className="text-text-muted font-medium">Reach high-intent buyers and renters in our curated network.</p>
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="mb-10">
+          <h1 className="text-4xl font-black text-secondary tracking-tight mb-2">List Your Property</h1>
+          <p className="text-text-muted font-medium">Reach thousands of potential residents in minutes.</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Info */}
-            <div className="lg:col-span-2 space-y-8">
-              <Card className="p-8 space-y-6">
-                <InputField 
-                  label="Listing Title" 
-                  icon={Home} 
-                  placeholder="e.g. Modern Penthouse with Skyline View"
-                  {...register('title', { required: true })}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <Card className="p-8 space-y-8">
+            <div className="space-y-6">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <Info className="w-5 h-5 text-primary" /> Basic Information
+              </h2>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-black text-text-muted uppercase tracking-widest">Property Title</label>
+                <input
+                  {...register('title')}
+                  placeholder="e.g. Modern 2BHK Apartment in Downtown"
+                  className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.title ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                 />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-text-muted uppercase tracking-widest px-1">Type</label>
-                    <select {...register('type')} className="w-full px-4 py-4 bg-background border border-border rounded-2xl font-bold outline-none focus:border-primary">
-                      <option value="rent">For Rent</option>
-                      <option value="buy">For Sale</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-text-muted uppercase tracking-widest px-1">Category</label>
-                    <select {...register('category')} className="w-full px-4 py-4 bg-background border border-border rounded-2xl font-bold outline-none focus:border-primary">
-                      <option value="flat">Flat/Apartment</option>
-                      <option value="house">Independent House</option>
-                      <option value="PG">PG</option>
-                      <option value="hostel">Hostel</option>
-                      <option value="commercial">Commercial Space</option>
-                    </select>
-                  </div>
-                </div>
+                {errors.title && <p className="text-red-500 text-xs font-bold mt-1">{errors.title.message}</p>}
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InputField label="Price (USD)" icon={DollarSign} type="number" placeholder="Price" {...register('price', { required: true })} />
-                  <InputField label="BHK / Configuration" icon={CheckCircle2} type="number" placeholder="e.g. 3" {...register('bhk')} />
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest px-1">Description</label>
-                  <textarea 
-                    {...register('description', { required: true })} 
-                    className="w-full p-6 bg-background border border-border rounded-3xl outline-none focus:border-primary font-bold min-h-[150px]"
-                    placeholder="Tell us more about your property..."
-                  />
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Listing Type</label>
+                  <select
+                    {...register('type')}
+                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                  >
+                    {TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
+                  </select>
                 </div>
-              </Card>
-
-              <Card className="p-8">
-                <h3 className="text-lg font-black mb-6 uppercase tracking-widest text-text-muted">Premium Amenities</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {AMENITIES_LIST.map(amenity => (
-                    <label key={amenity} className="flex items-center gap-3 p-4 bg-background border border-border rounded-2xl cursor-pointer hover:border-primary transition-colors group">
-                      <input type="checkbox" value={amenity} {...register('amenities')} className="w-5 h-5 rounded-lg border-2 border-border text-primary focus:ring-primary" />
-                      <span className="font-bold text-sm text-text-muted group-hover:text-text-main">{amenity}</span>
-                    </label>
-                  ))}
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Category</label>
+                  <select
+                    {...register('category')}
+                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                  >
+                    {CATEGORIES.map(c => <option key={c} value={c} className="uppercase">{c}</option>)}
+                  </select>
                 </div>
-              </Card>
+              </div>
             </div>
 
-            {/* Location & Images */}
-            <div className="space-y-8">
-              <Card className="p-8 space-y-6">
-                <h3 className="text-lg font-black mb-4 uppercase tracking-widest text-text-muted">Location Details</h3>
-                <InputField label="City" icon={MapPin} placeholder="e.g. San Francisco" {...register('city', { required: true })} />
-                <InputField label="Locality" placeholder="e.g. Nob Hill" {...register('locality', { required: true })} />
+            <hr className="border-border" />
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" /> Location Details
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest px-1">Full Address</label>
-                  <textarea 
-                    {...register('location', { required: true })} 
-                    className="w-full p-4 bg-background border border-border rounded-2xl outline-none focus:border-primary font-bold"
-                    rows="3"
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">City</label>
+                  <input
+                    {...register('city')}
+                    placeholder="e.g. New York"
+                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.city ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                   />
+                  {errors.city && <p className="text-red-500 text-xs font-bold mt-1">{errors.city.message}</p>}
                 </div>
-              </Card>
-
-              <Card className="p-8 space-y-6">
-                <h3 className="text-lg font-black mb-4 uppercase tracking-widest text-text-muted">Visual Assets</h3>
-                <div className="border-2 border-dashed border-border rounded-[32px] p-10 text-center space-y-4 hover:border-primary transition-colors relative">
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Locality</label>
+                  <input
+                    {...register('locality')}
+                    placeholder="e.g. Manhattan"
+                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.locality ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                   />
-                  <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto">
-                    <Upload className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <p className="font-black">Upload Photos</p>
-                    <p className="text-xs text-text-muted font-bold mt-1">{images.length} files selected</p>
-                  </div>
+                  {errors.locality && <p className="text-red-500 text-xs font-bold mt-1">{errors.locality.message}</p>}
                 </div>
-              </Card>
-
-              <PremiumButton 
-                type="submit" 
-                disabled={loading}
-                className="w-full py-5 !rounded-3xl text-xl shadow-2xl shadow-primary/30"
-              >
-                {loading ? 'Processing...' : 'Publish Listing'}
-              </PremiumButton>
+              </div>
             </div>
+
+            <hr className="border-border" />
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-primary" /> Pricing & Configuration
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Price (USD)</label>
+                  <input
+                    type="number"
+                    {...register('price')}
+                    placeholder="2500"
+                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  />
+                  {errors.price && <p className="text-red-500 text-xs font-bold mt-1">{errors.price.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">BHK</label>
+                  <input
+                    type="number"
+                    {...register('bhk')}
+                    placeholder="2"
+                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.bhk ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  />
+                  {errors.bhk && <p className="text-red-500 text-xs font-bold mt-1">{errors.bhk.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Furnishing</label>
+                  <select
+                    {...register('furnishing')}
+                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                  >
+                    {FURNISHING.map(f => <option key={f} value={f}>{f.replace('-', ' ').toUpperCase()}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <hr className="border-border" />
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <Check className="w-5 h-5 text-primary" /> Amenities
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {AMENITIES_LIST.map(a => (
+                  <button
+                    key={a}
+                    type="button"
+                    onClick={() => toggleAmenity(a)}
+                    className={`px-6 py-3 rounded-full border-2 font-black text-xs transition-all ${amenities.includes(a) ? 'bg-primary text-white border-primary shadow-lg scale-105' : 'bg-white border-gray-100 hover:border-gray-300 text-gray-400'}`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <hr className="border-border" />
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <Upload className="w-5 h-5 text-primary" /> Property Images
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                {previews.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-border group">
+                    <img src={src} className="w-full h-full object-cover" alt="Preview" />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {previews.length < 10 && (
+                  <label className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 transition text-text-muted hover:text-primary hover:border-primary/30">
+                    <Plus className="w-6 h-6" />
+                    <span className="text-[10px] font-black uppercase">Add Image</span>
+                    <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+                  </label>
+                )}
+              </div>
+              <p className="text-[10px] text-text-muted font-black uppercase">Upload at least 1 image. Max 10.</p>
+            </div>
+
+            <hr className="border-border" />
+
+            <div className="space-y-6">
+              <h2 className="text-xl font-black flex items-center gap-2">
+                <Home className="w-5 h-5 text-primary" /> Description
+              </h2>
+              <div className="space-y-2">
+                <textarea
+                  {...register('description')}
+                  rows="6"
+                  placeholder="Tell potential residents what makes your property special..."
+                  className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold resize-none ${errors.description ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                />
+                {errors.description && <p className="text-red-500 text-xs font-bold mt-1">{errors.description.message}</p>}
+              </div>
+            </div>
+          </Card>
+
+          <div className="flex justify-end pt-4">
+            <PremiumButton
+              type="submit"
+              disabled={loading}
+              className="!px-16 py-6 !rounded-[32px] text-xl shadow-2xl shadow-primary/30"
+            >
+              {loading ? 'Publishing Listing...' : 'List My Property Now'}
+            </PremiumButton>
           </div>
         </form>
       </div>

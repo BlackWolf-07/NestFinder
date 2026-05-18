@@ -23,7 +23,7 @@ exports.getStats = async (req, res) => {
 
 exports.getPendingProperties = async (req, res) => {
   try {
-    const properties = await Property.getAll({ isAdmin: true, approvalStatus: 'pending' });
+    const { properties } = await Property.getAll({ isAdmin: true, approvalStatus: 'pending' });
     res.json(properties);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch pending properties' });

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, SlidersHorizontal, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getProperties } from '../api/property';
@@ -11,15 +12,16 @@ const CATEGORIES = ['flat', 'house', 'PG', 'hostel', 'commercial'];
 const BHK_OPTIONS = [1, 2, 3, 4, 5];
 
 export default function Home() {
+  const navigate = useNavigate();
   const [data, setData] = useState({ properties: [], total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ 
-    city: '', 
-    type: '', 
-    category: '', 
-    minPrice: '', 
-    maxPrice: '', 
+  const [filters, setFilters] = useState({
+    city: '',
+    type: '',
+    category: '',
+    minPrice: '',
+    maxPrice: '',
     bhk: '',
     locality: '',
     page: 1,
@@ -60,7 +62,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-secondary">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.15 }}
           className="absolute inset-0 z-0"
@@ -70,14 +72,14 @@ export default function Home() {
         </motion.div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight"
           >
             Find Your <span className="text-primary italic">Perfect</span> Nest
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -87,7 +89,7 @@ export default function Home() {
           </motion.p>
 
           {/* Search Bar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -95,17 +97,17 @@ export default function Home() {
           >
             <div className="flex-1 flex items-center px-4 w-full">
               <MapPin className="text-text-muted mr-3 w-5 h-5" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="city"
-                placeholder="Where would you like to live?" 
+                placeholder="Where would you like to live?"
                 className="w-full bg-transparent py-4 outline-none font-bold text-lg"
                 value={filters.city}
                 onChange={handleFilterChange}
               />
             </div>
             <div className="w-full md:w-auto flex gap-2 p-1">
-              <button 
+              <button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-4 rounded-2xl flex items-center justify-center transition-colors ${showFilters ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-slate-800'}`}
               >
@@ -128,7 +130,7 @@ export default function Home() {
               >
                 <div>
                   <label className="block text-xs font-black text-text-muted uppercase mb-2">Property Type</label>
-                  <select 
+                  <select
                     name="type"
                     className="w-full bg-background p-3 rounded-xl border border-border outline-none focus:border-primary font-bold"
                     value={filters.type}
@@ -141,7 +143,7 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="block text-xs font-black text-text-muted uppercase mb-2">Category</label>
-                  <select 
+                  <select
                     name="category"
                     className="w-full bg-background p-3 rounded-xl border border-border outline-none focus:border-primary font-bold"
                     value={filters.category}
@@ -153,7 +155,7 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="block text-xs font-black text-text-muted uppercase mb-2">BHK</label>
-                  <select 
+                  <select
                     name="bhk"
                     className="w-full bg-background p-3 rounded-xl border border-border outline-none focus:border-primary font-bold"
                     value={filters.bhk}
@@ -166,18 +168,18 @@ export default function Home() {
                 <div>
                   <label className="block text-xs font-black text-text-muted uppercase mb-2">Price Range</label>
                   <div className="flex items-center space-x-2">
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       name="minPrice"
-                      placeholder="Min" 
+                      placeholder="Min"
                       className="w-1/2 bg-background p-3 rounded-xl border border-border outline-none focus:border-primary font-bold"
                       value={filters.minPrice}
                       onChange={handleFilterChange}
                     />
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       name="maxPrice"
-                      placeholder="Max" 
+                      placeholder="Max"
                       className="w-1/2 bg-background p-3 rounded-xl border border-border outline-none focus:border-primary font-bold"
                       value={filters.maxPrice}
                       onChange={handleFilterChange}
@@ -223,15 +225,15 @@ export default function Home() {
             ))}
           </div>
         ) : data.properties.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-center py-40 bg-card rounded-[40px] border-2 border-dashed border-border"
           >
-            <div className="text-8xl mb-6">🏝️</div>
+            <div className="text-8xl mb-6">🏘️</div>
             <h3 className="text-3xl font-black mb-2 tracking-tight">No Nests Found</h3>
             <p className="text-text-muted max-w-sm mx-auto">We couldn't find any properties matching your current criteria.</p>
-            <PremiumButton 
+            <PremiumButton
               variant="outline"
               className="mt-8"
               onClick={() => setFilters({ city: '', type: '', category: '', minPrice: '', maxPrice: '', bhk: '', locality: '', page: 1, limit: 6 })}
@@ -258,7 +260,7 @@ export default function Home() {
                 >
                   <ChevronLeft />
                 </PremiumButton>
-                
+
                 <div className="flex items-center space-x-2">
                   {[...Array(data.totalPages)].map((_, i) => (
                     <button
@@ -289,7 +291,7 @@ export default function Home() {
       <footer className="bg-secondary text-white py-20 px-8 text-center">
         <h3 className="text-3xl font-black mb-4">Want to list your property?</h3>
         <p className="text-gray-400 mb-8">Join the premium network of property owners on NestFinder.</p>
-        <PremiumButton onClick={() => navigate('/add-property')}>
+        <PremiumButton onClick={() => navigate('/host/add-property')}>
           Become a Host
         </PremiumButton>
       </footer>

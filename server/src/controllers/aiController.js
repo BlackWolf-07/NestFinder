@@ -6,7 +6,7 @@ exports.recommendProperties = async (req, res) => {
     const userPreferences = req.body;
     
     // Fetch relevant properties for AI to filter
-    const allProperties = await Property.getAll({ 
+    const { properties: allProperties } = await Property.getAll({ 
       city: userPreferences.city,
       type: userPreferences.type
     });
@@ -16,7 +16,7 @@ exports.recommendProperties = async (req, res) => {
     }
 
     const aiMatches = await geminiService.getRecommendations(userPreferences, allProperties);
-    
+
     // Combine AI reasons with property data
     const recommendations = aiMatches.map(match => {
       const prop = allProperties.find(p => p.id === match.id);
