@@ -67,24 +67,32 @@ export default function AddProperty() {
   };
 
   const onSubmit = async (data) => {
+    console.log("Submitting form data:", data);
     if (images.length === 0) {
-      return toast.error('Please upload at least one image');
+      return toast.error("Please upload at least one image");
     }
 
     setLoading(true);
     const formData = new FormData();
     Object.keys(data).forEach(key => formData.append(key, data[key]));
-    formData.append('amenities', JSON.stringify(amenities));
-    images.forEach(img => formData.append('images', img));
+    formData.append("amenities", JSON.stringify(amenities));
+    images.forEach(img => formData.append("images", img));
+
+    console.log("FormData entries:");
+    for (let pair of formData.entries()) {
+      console.log(pair[0], pair[1]);
+    }
 
     try {
-      await API.post('/properties/create', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const response = await API.post("/properties/create", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
       });
-      toast.success('Property listed successfully!');
-      navigate('/dashboard/my-properties');
+      console.log("Submission success:", response.data);
+      toast.success("Property listed successfully!");
+      navigate("/dashboard/my-properties");
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to create listing');
+      console.error("Submission error details:", err.response?.data);
+      toast.error(err.response?.data?.error || "Failed to create listing");
     } finally {
       setLoading(false);
     }
@@ -170,7 +178,7 @@ export default function AddProperty() {
 
             <div className="space-y-6">
               <h2 className="text-xl font-black flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary" /> Pricing & Configuration
+                <IndianRupee className="w-5 h-5 text-primary" /> Pricing & Configuration
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
@@ -289,3 +297,4 @@ export default function AddProperty() {
     </div>
   );
 }
+

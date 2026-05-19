@@ -136,7 +136,7 @@ const Property = {
         description TEXT,
         images JSON,
         neighborhood JSON,
-        isVerified BOOLEAN DEFAULT FALSE,
+        isVerified BOOLEAN DEFAULT FALSE, isFeatured BOOLEAN DEFAULT FALSE,
         approvalStatus ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
         status ENUM('available', 'rented', 'sold') DEFAULT 'available',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -148,3 +148,5 @@ const Property = {
 };
 
 module.exports = Property;
+
+

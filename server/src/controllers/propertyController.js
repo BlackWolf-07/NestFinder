@@ -2,22 +2,35 @@ const Property = require('../models/Property');
 
 exports.createProperty = async (req, res) => {
   try {
+    console.log("Request body:", req.body);
+    console.log("Request files:", req.files);
+    
+    if (!req.user || !req.user.id) {
+        throw new Error("User authentication context missing.");
+    }
+
     const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    
+    if (images.length === 0) {
+        throw new Error("No images uploaded.");
+    }
+
     const propertyData = {
       ...req.body,
       ownerId: req.user.id,
       images,
-      amenities: typeof req.body.amenities === 'string' ? JSON.parse(req.body.amenities) : req.body.amenities,
+      amenities: typeof req.body.amenities === "string" ? JSON.parse(req.body.amenities) : req.body.amenities,
       location: req.body.location || `${req.body.locality}, ${req.body.city}`,
       latitude: req.body.latitude || null,
       longitude: req.body.longitude || null
     };
 
     const id = await Property.create(propertyData);
-    res.status(201).json({ message: 'Property listed successfully', id });
+    console.log("Property saved with ID:", id);
+    res.status(200).json({ message: "Property created", id });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create property' });
+    console.error("Submission Error:", error);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -78,3 +91,5 @@ exports.deleteProperty = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete property' });
   }
 };
+
+
