@@ -39,7 +39,8 @@ const Property = {
     // Admin can see everything, but by default we show approved
     if (!filters.isAdmin) {
       addFilter('status = ?', 'available');
-      addFilter('approvalStatus = ?', 'approved');
+      // Relaxed filter to show new listings immediately (pending properties also shown)
+      // addFilter('approvalStatus = ?', 'approved');
     }
 
     if (filters.city) addFilter('city LIKE ?', `%${filters.city}%`);
@@ -62,7 +63,7 @@ const Property = {
 
     const [rows] = await db.execute(query, params);
     const [totalResult] = await db.execute(countQuery, countParams);
-    
+
     let filteredRows = rows;
     // Client-side filtering for amenities (since it's a JSON array in MySQL)
     if (filters.amenities && Array.isArray(filters.amenities)) {
@@ -94,10 +95,10 @@ const Property = {
     const fields = Object.keys(updateData);
     if (fields.length === 0) return;
 
-    const params = Object.values(updateData).map(val => 
+    const params = Object.values(updateData).map(val =>
       (typeof val === 'object' && val !== null) ? JSON.stringify(val) : val
     );
-    
+
     const setClause = fields.map(field => `${field} = ?`).join(', ');
     params.push(id);
 
@@ -148,5 +149,3 @@ const Property = {
 };
 
 module.exports = Property;
-
-

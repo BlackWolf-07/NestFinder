@@ -41,11 +41,12 @@ export default function Home() {
     console.log("Home: Initiating fetch sequence...");
     setLoading(true);
     setError(null);
-    
+
     try {
       const res = await getProperties(currentFilters || filters);
-      console.log("Home: Fetch success.");
-      setData(res.data);
+      console.log("Home: Fetch success.", res);
+      // FIXED: res is already response.data from the API helper
+      setData(res);
     } catch (err) {
       console.error("Home: Communication failure:", err);
       setError("Sector data unreachable. Offline cache engaged.");
@@ -53,10 +54,9 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [filters]); // Identity only changes if filters (the object) changes
+  }, [filters]); 
 
   useEffect(() => {
-    // Prevent immediate fetch on mount if already handled or to control sequence
     const timer = setTimeout(() => {
       fetchProperties();
     }, 100);
@@ -187,9 +187,9 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-6 py-20">
         {error && (
-          <div className="mb-10 p-5 glass rounded-2xl border-accent/30 flex items-center justify-between text-accent font-black text-xs uppercase tracking-widest">
+          <div className="mb-10 p-5 glass rounded-2xl border-accent/30 flex items-center justify-between text-accent font-black text-xs uppercase tracking-widest"> 
             <span className="flex items-center gap-2"><Zap className="w-4 h-4" /> {error}</span>
-            <button onClick={() => fetchProperties()} className="hover:rotate-180 transition-transform duration-500"><RefreshCcw className="w-4 h-4" /></button>
+            <button onClick={() => fetchProperties()} className="hover:rotate-180 transition-transform duration-500"><RefreshCcw className="w-4 h-4" /></button>    
           </div>
         )}
 
@@ -213,7 +213,7 @@ export default function Home() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {data.properties.map((property, idx) => (
+              {data.properties && data.properties.map((property, idx) => (
                 <PropertyCard key={property.id} property={property} index={idx} />
               ))}
             </div>

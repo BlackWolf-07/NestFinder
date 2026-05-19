@@ -5,15 +5,24 @@ import { Card, Badge, PremiumButton } from './UIElements';
 import { formatPrice } from '../utils/formatPrice';
 
 export default function PropertyCard({ property, index = 0 }) {
-  const imageUrl = property.images && JSON.parse(property.images)[0] 
-    ? `http://localhost:5000${JSON.parse(property.images)[0]}`
+  // Safe Image Parsing
+  let images = [];
+  try {
+    images = typeof property.images === 'string' ? JSON.parse(property.images) : (property.images || []);
+  } catch (e) {
+    console.error("Image parsing failed", e);
+    images = [];
+  }
+
+  const imageUrl = images.length > 0 
+    ? (images[0].startsWith('http') ? images[0] : `http://localhost:5000${images[0]}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
 
   return (
     <Card className="group relative overflow-hidden">
       {/* Decorative Glow */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 blur-[60px] group-hover:bg-primary/20 transition-all duration-700" />
-      
+
       <div className="relative h-[280px] overflow-hidden m-2 rounded-[28px]">
         <motion.img
           whileHover={{ scale: 1.15, rotate: 1 }}
@@ -22,7 +31,7 @@ export default function PropertyCard({ property, index = 0 }) {
           alt={property.title}
           className="w-full h-full object-cover"
         />
-        
+
         {/* Overlays */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           <Badge variant="glass" className="!bg-black/40 backdrop-blur-md border-white/20">
@@ -36,17 +45,17 @@ export default function PropertyCard({ property, index = 0 }) {
         </div>
 
         {property.avgRating && (
-          <div className="absolute top-4 right-4 glass-light px-3 py-1.5 rounded-2xl flex items-center gap-1.5 font-black text-xs shadow-xl border-white/20">
+          <div className="absolute top-4 right-4 glass-light px-3 py-1.5 rounded-2xl flex items-center gap-1.5 font-black text-xs shadow-xl border-white/20">       
             <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
             {Number(property.avgRating).toFixed(1)}
           </div>
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-secondary via-transparent to-transparent opacity-60" />
-        
+
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-90 group-hover:scale-100">
            <Link to={`/properties/${property.id}`}>
-            <motion.div 
+            <motion.div
               whileHover={{ rotate: 45 }}
               className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-secondary shadow-2xl"
             >

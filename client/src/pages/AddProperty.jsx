@@ -59,9 +59,9 @@ export default function AddProperty() {
   };
 
   const toggleAmenity = (amenity) => {
-    setAmenities(prev => 
-      prev.includes(amenity) 
-        ? prev.filter(a => a !== amenity) 
+    setAmenities(prev =>
+      prev.includes(amenity)
+        ? prev.filter(a => a !== amenity)
         : [...prev, amenity]
     );
   };
@@ -89,7 +89,8 @@ export default function AddProperty() {
       });
       console.log("Submission success:", response.data);
       toast.success("Property listed successfully!");
-      navigate("/dashboard/my-properties");
+      // Instant Update Fix: Redirect to homepage to see the new listing
+      window.location.href = "/";
     } catch (err) {
       console.error("Submission error details:", err.response?.data);
       toast.error(err.response?.data?.error || "Failed to create listing");
@@ -113,7 +114,7 @@ export default function AddProperty() {
               <h2 className="text-xl font-black flex items-center gap-2">
                 <Info className="w-5 h-5 text-primary" /> Basic Information
               </h2>
-              
+
               <div className="space-y-2">
                 <label className="text-xs font-black text-text-muted uppercase tracking-widest">Property Title</label>
                 <input
@@ -186,7 +187,7 @@ export default function AddProperty() {
                   <div className="relative">
                     <input
                       type="number"
-                      placeholder="Enter price in ₹"
+                      placeholder="Enter price in â‚¹"
                       {...register('price')}
                       className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                     />
@@ -297,4 +298,3 @@ export default function AddProperty() {
     </div>
   );
 }
-
