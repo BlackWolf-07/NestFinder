@@ -9,6 +9,7 @@ import { scheduleVisit } from '../api/booking';
 import { addToFavorites, removeFromFavorites, getMyFavorites } from '../api/favorite';
 import { getReviews, addReview } from '../api/review';
 import { reportProperty } from '../api/report';
+import { formatPrice } from '../utils/formatPrice';
 import useAuthStore from '../store/authStore';
 import L from 'leaflet';
 import ChatBot from '../components/ChatBot';
@@ -266,7 +267,7 @@ export default function PropertyDetails() {
                 <div className="flex flex-col items-end gap-4">
                   <div className="text-right">
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mb-1">Market Valuation</p>
-                    <p className="text-5xl font-black text-gradient tracking-tighter">${Number(property.price).toLocaleString()}</p>
+                    <p className="text-5xl font-black text-gradient tracking-tighter">{formatPrice(property.price)}</p>
                   </div>
                   <PremiumButton
                     variant={isFavorite ? 'primary' : 'glass'}

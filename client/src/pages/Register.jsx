@@ -75,7 +75,7 @@ export default function Register() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <FuturisticInput label="Full Name" icon={User} placeholder="Enter your alias" {...register('name')} />
                 <FuturisticInput label="Identity (Email)" icon={Mail} placeholder="you@domain.com" {...register('email')} />
-                <FuturisticInput label="Communication (Phone)" icon={Phone} placeholder="+1 (000) 000-0000" {...register('phone')} />
+                <FuturisticInput label="Communication (Phone)" icon={Phone} placeholder="+91 00000 00000" {...register('phone')} />
                 <FuturisticInput label="Security Key" icon={Lock} type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" {...register('password')} />
               </div>
 

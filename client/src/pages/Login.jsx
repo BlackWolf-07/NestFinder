@@ -58,11 +58,20 @@ export default function Login() {
   };
 
   const handleSendOtp = async () => {
-    if (!phone) return toast.error('Enter valid phone number');
+    // Basic validation: ensure it's at least 10 digits
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length < 10) {
+      return toast.error('Enter a valid 10-digit phone number');
+    }
+
     setLoading(true);
     try {
-      await sendOtp(phone);
-      toast.success('Access code transmitted. Check your device.');
+      const res = await sendOtp(phone);
+      toast.success(res.devNote || 'Access code transmitted. Check your device.');
+      // For development, we show where to find the code
+      if (res.devNote) {
+        toast.info('DEVELOPER MODE: ' + res.devNote, { duration: 8000 });
+      }
       setOtpStep(2);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to send OTP');
@@ -176,10 +185,15 @@ export default function Login() {
                 >
                   {otpStep === 1 ? (
                     <>
+                      <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl mb-4">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest text-center">
+                          Development Mode: OTP will be logged in the backend console.
+                        </p>
+                      </div>
                       <FuturisticInput
                         label="Communication (Phone)"
                         icon={Phone}
-                        placeholder="+1 (000) 000-0000"
+                        placeholder="+91 00000 00000"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                       />

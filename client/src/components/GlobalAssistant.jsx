@@ -4,7 +4,7 @@ import { generalAssistant } from '../api/ai';
 export default function GlobalAssistant({ onFilterChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'ai', text: "Hey! I'm your NestFinder scout. Tell me what you're looking for! (e.g. 'Find a 2BHK in London under $1200')" }
+    { role: 'ai', text: "Hey! I'm your NestFinder scout. Tell me what you're looking for! (e.g. 'Find a 2BHK in Mumbai under ₹45,000')" }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);

@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Upload, Home, MapPin, DollarSign, Info, Check, Plus, X } from 'lucide-react';
+import { Upload, Home, MapPin, IndianRupee, Info, Check, Plus, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { Card, PremiumButton, Skeleton } from '../components/UIElements';
 import API from '../api';
@@ -174,13 +174,15 @@ export default function AddProperty() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Price (USD)</label>
-                  <input
-                    type="number"
-                    {...register('price')}
-                    placeholder="2500"
-                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
-                  />
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Price (INR)</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="Enter price in ₹"
+                      {...register('price')}
+                      className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    />
+                  </div>
                   {errors.price && <p className="text-red-500 text-xs font-bold mt-1">{errors.price.message}</p>}
                 </div>
                 <div className="space-y-2">

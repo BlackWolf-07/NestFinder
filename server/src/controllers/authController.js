@@ -6,9 +6,30 @@ const https = require('https');
 // Mock OTP storage (for development)
 const otpStore = {};
 
+// Helper to normalize phone numbers to +91
+const normalizePhone = (phone) => {
+  if (!phone) return phone;
+  // Strip all non-numeric characters
+  let cleaned = phone.replace(/\D/g, '');
+  
+  // If it's a 10 digit number, assume Indian and prepend +91
+  if (cleaned.length === 10) return `+91${cleaned}`;
+  
+  // If it's 11 digits and starts with 1, it's a US number, convert to Indian (+91) per requirements
+  if (cleaned.startsWith('1') && cleaned.length === 11) return `+91${cleaned.substring(1)}`;
+  
+  // If it's 12 digits and starts with 91, it's already Indian with country code, just add +
+  if (cleaned.startsWith('91') && cleaned.length === 12) return `+${cleaned}`;
+  
+  // Default: return the cleaned digits with a plus prefix
+  return `+${cleaned}`;
+};
+
 exports.register = async (req, res) => {
   try {
-    const { name, email, phone, password, role } = req.body;
+    let { name, email, phone, password, role } = req.body;
+    phone = normalizePhone(phone);
+    console.log(`[AUTH-SYSTEM] Registering user with phone: ${phone}`);
 
     // Check if user exists
     const existingUser = await User.findByEmail(email);
@@ -78,30 +99,44 @@ exports.login = async (req, res) => {
 
 exports.sendOtp = async (req, res) => {
   try {
-    const { phone } = req.body;
+    let { phone } = req.body;
+    console.log(`[AUTH-SYSTEM] sendOtp request received for: ${phone}`);
+    
     if (!phone) return res.status(400).json({ error: 'Phone number is required' });
+    
+    const originalPhone = phone;
+    phone = normalizePhone(phone);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
 
     otpStore[phone] = { otp, expiry };
 
-    // Mock sending OTP
-    console.log(`[AUTH-SYSTEM] OTP for ${phone}: ${otp}`);
+    console.log('\n\n================================================');
+    console.log('🚀 [AUTH-SYSTEM] NEW OTP GENERATED');
+    console.log(`📱 [PHONE] Normalized: ${phone}`);
+    console.log(`🔑 [ACCESS CODE] --> ${otp} <--`);
+    console.log(`⏰ [EXPIRY] ${new Date(expiry).toLocaleTimeString()}`);
+    console.log('================================================\n\n');
     
     res.json({ 
-      message: 'OTP sent successfully'
+      message: 'OTP sent successfully',
+      devNote: `Check your backend terminal/console. The code is ${otp} (Logged for development)`
     });
   } catch (error) {
+    console.error('[AUTH-SYSTEM] Send OTP Critical Error:', error);
     res.status(500).json({ error: 'Failed to send OTP' });
   }
 };
 
 exports.verifyOtp = async (req, res) => {
   try {
-    const { phone, otp } = req.body;
+    let { phone, otp } = req.body;
+    phone = normalizePhone(phone);
+    console.log(`[AUTH-SYSTEM] verifyOtp request: phone=${phone}, otp=${otp}`);
     
     if (!otpStore[phone] || otpStore[phone].otp !== otp || otpStore[phone].expiry < Date.now()) {
+      console.log(`[AUTH-SYSTEM] Verification failed for ${phone}. Invalid or expired.`);
       return res.status(400).json({ error: 'Invalid or expired OTP' });
     }
 
@@ -109,6 +144,7 @@ exports.verifyOtp = async (req, res) => {
 
     let user = await User.findByPhone(phone);
     if (!user) {
+      console.log(`[AUTH-SYSTEM] User not found for ${phone}. Creating auto-profile.`);
       // Auto-create user
       const userId = await User.create({
         name: `User_${phone.slice(-4)}`,
@@ -132,7 +168,7 @@ exports.verifyOtp = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('[AUTH-SYSTEM] Verify OTP Error:', error);
     res.status(500).json({ error: 'OTP verification failed' });
   }
 };

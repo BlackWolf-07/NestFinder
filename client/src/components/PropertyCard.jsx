@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Bed, ShieldCheck, Star, ArrowUpRight } from 'lucide-react';
 import { Card, Badge, PremiumButton } from './UIElements';
+import { formatPrice } from '../utils/formatPrice';
 
 export default function PropertyCard({ property, index = 0 }) {
   const imageUrl = property.images && JSON.parse(property.images)[0] 
@@ -60,7 +61,7 @@ export default function PropertyCard({ property, index = 0 }) {
           <h3 className="text-2xl font-black text-white leading-tight group-hover:text-primary-light transition-colors duration-300 truncate pr-4">
             {property.title}
           </h3>
-          <Badge variant="success">${Number(property.price).toLocaleString()}</Badge>
+          <Badge variant="success">{formatPrice(property.price)}</Badge>
         </div>
 
         <div className="flex items-center text-text-muted text-sm font-bold mb-8">
