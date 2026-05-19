@@ -15,18 +15,21 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user.role === 'owner' || user.role === 'admin') {
+    if (user && (user.role === 'owner' || user.role === 'admin')) {
       fetchMyProperties();
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const fetchMyProperties = async () => {
     try {
-      const data = await getMyProperties();
+      const response = await getMyProperties();
+      // The API now returns { success: true, properties: [] }
+      const data = response.success ? response.properties : (Array.isArray(response) ? response : []);
       setProperties(data);
     } catch (err) {
+      console.error(err);
       toast.error('Data retrieval failure.');
     } finally {
       setLoading(false);
@@ -45,6 +48,8 @@ export default function Dashboard() {
     }
   };
 
+  if (!user) return <div className="bg-background min-h-screen flex items-center justify-center text-white font-black italic">SYNCHRONIZING PROFILE...</div>;
+
   const OwnerDashboard = () => (
     <div className="space-y-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
@@ -56,7 +61,7 @@ export default function Dashboard() {
           <h1 className="text-5xl font-black tracking-tighter text-white mt-4">Command <span className="text-gradient">Console</span></h1>
           <p className="text-text-muted font-medium mt-2">Orchestrate your property portfolio and network status.</p>
         </motion.div>
-        <PremiumButton onClick={() => navigate('/host/add-property')} className="flex items-center gap-3 !px-10 !py-5 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
+        <PremiumButton onClick={() => navigate('/host/add-property')} className="flex items-center gap-3 !px-10 !py-5 shadow-[0_0_30px_rgba(99,102,241,0.3)]">      
           <Plus className="w-6 h-6" /> Initialize New Listing
         </PremiumButton>
       </div>
@@ -90,7 +95,7 @@ export default function Dashboard() {
           animate={{ opacity: 1, scale: 1 }}
           className="text-center py-40 glass rounded-[48px] border-2 border-dashed border-white/5"
         >
-          <div className="text-8xl mb-8 animate-float">ðŸ›°ï¸</div>
+          <div className="text-8xl mb-8 animate-float">Ã°Å¸â€ºÂ°Ã¯Â¸</div>
           <h3 className="text-3xl font-black mb-4">Network Empty</h3>
           <p className="text-text-muted mb-10 max-w-sm mx-auto text-lg">Your sector currently has zero active property links.</p>
           <PremiumButton variant="outline" onClick={() => navigate('/host/add-property')}>
@@ -109,7 +114,7 @@ export default function Dashboard() {
               <Card className="group h-full flex flex-col relative overflow-hidden">
                 <div className="relative h-56 overflow-hidden m-2 rounded-[32px]">
                   <img
-                    src={property.images && JSON.parse(property.images)[0] ? `http://localhost:5000${JSON.parse(property.images)[0]}` : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600'}
+                    src={(property.images && (typeof property.images === 'string' ? JSON.parse(property.images) : property.images)[0]) ? `http://localhost:5000${(typeof property.images === 'string' ? JSON.parse(property.images) : property.images)[0]}` : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=600'}
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />
                   <div className="absolute top-4 left-4 flex gap-2">
@@ -135,20 +140,20 @@ export default function Dashboard() {
                   <div className="mt-auto pt-8 flex gap-3 border-t border-white/5">
                     <Link
                       to={`/properties/${property.id}`}
-                      className="flex-1 p-4 glass-light rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-sm"
+                      className="flex-1 p-4 glass-light rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-sm"    
                       title="Access Public View"
                     >
                       <ExternalLink className="w-5 h-5" />
                     </Link>
                     <button
-                      className="flex-1 p-4 glass-light rounded-2xl flex items-center justify-center hover:bg-secondary-light hover:text-white transition-all"
+                      className="flex-1 p-4 glass-light rounded-2xl flex items-center justify-center hover:bg-secondary-light hover:text-white transition-all"      
                       title="Modify Matrix"
                     >
                       <Edit3 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(property.id)}
-                      className="flex-1 p-4 bg-accent/10 text-accent rounded-2xl flex items-center justify-center hover:bg-accent hover:text-white transition-all"
+                      className="flex-1 p-4 bg-accent/10 text-accent rounded-2xl flex items-center justify-center hover:bg-accent hover:text-white transition-all"  
                       title="Purge Link"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -171,7 +176,7 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
         >
           <Badge variant="info">User Profile Integrated</Badge>
-          <h1 className="text-6xl font-black tracking-tighter text-white mt-6">Welcome, <span className="text-gradient">{user.name.split(' ')[0]}</span></h1>
+          <h1 className="text-6xl font-black tracking-tighter text-white mt-6">Welcome, <span className="text-gradient">{user.name.split(' ')[0]}</span></h1>       
           <p className="text-text-muted font-medium mt-4 text-xl">Operational sector active. Your journey to a premium nest continues.</p>
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} className="glass-light p-4 rounded-3xl border-primary/20 flex items-center gap-4">
@@ -215,7 +220,7 @@ export default function Dashboard() {
       </div>
 
       <section className="pt-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           className="bg-futuristic rounded-[56px] p-16 text-white relative overflow-hidden border border-white/5"

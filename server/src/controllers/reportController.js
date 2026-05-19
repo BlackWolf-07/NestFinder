@@ -10,8 +10,8 @@ exports.reportProperty = async (req, res) => {
     };
 
     const id = await Report.create(reportData);
-    res.status(201).json({ message: 'Property reported successfully. Admin will review it.', id });
+    res.status(201).json({ success: true, message: 'Property reported successfully. Admin will review it.', id });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to submit report' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to submit report' });
   }
 };

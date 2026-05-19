@@ -18,7 +18,9 @@ export default function Bookings() {
 
   const fetchBookings = async () => {
     try {
-      const data = await getMyBookings();
+      const response = await getMyBookings();
+      // The API now returns { success: true, bookings: [] }
+      const data = response.success ? response.bookings : (Array.isArray(response) ? response : []);
       setBookings(data);
     } catch (err) {
       toast.error('Failed to load bookings');
@@ -51,12 +53,12 @@ export default function Bookings() {
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40" />)}
           </div>
         ) : bookings.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-40 bg-card rounded-[40px] border-2 border-dashed border-border"
           >
-            <div className="text-7xl mb-6 text-gray-300">📅</div>
+            <div className="text-7xl mb-6 text-gray-300">ðŸ“…</div>
             <h3 className="text-2xl font-black mb-2">No Scheduled Tours</h3>
             <p className="text-text-muted max-w-sm mx-auto">Your upcoming property visits will appear here once you've requested a tour.</p>
           </motion.div>
@@ -72,8 +74,8 @@ export default function Bookings() {
                 <Card className="p-8 flex flex-col md:flex-row items-center gap-8 group">
                   {/* Property Preview */}
                   <div className="w-full md:w-48 h-32 rounded-2xl overflow-hidden flex-shrink-0 border border-border">
-                    <img 
-                      src={booking.propertyImage ? `http://localhost:5000${booking.propertyImage}` : 'https://via.placeholder.com/200x150'} 
+                    <img
+                      src={booking.propertyImage ? `http://localhost:5000${booking.propertyImage}` : 'https://via.placeholder.com/200x150'}
                       className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500"
                     />
                   </div>
@@ -88,7 +90,7 @@ export default function Bookings() {
                         </p>
                       </div>
                       <Badge variant={
-                        booking.status === 'approved' ? 'success' : 
+                        booking.status === 'approved' ? 'success' :
                         booking.status === 'rejected' ? 'error' : 'warning'
                       }>
                         {booking.status}
@@ -111,16 +113,16 @@ export default function Bookings() {
                   </div>
 
                   {/* Actions for Owner */}
-                  {user.role === 'owner' && booking.status === 'pending' && (
+                  {user && user.role === 'owner' && booking.status === 'pending' && (
                     <div className="flex gap-2 w-full md:w-auto">
-                      <button 
+                      <button
                         onClick={() => handleStatusUpdate(booking.id, 'approved')}
                         className="p-4 bg-green-500/10 text-green-600 rounded-2xl hover:bg-green-500 hover:text-white transition-all"
                         title="Approve Tour"
                       >
                         <CheckCircle className="w-6 h-6" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleStatusUpdate(booking.id, 'rejected')}
                         className="p-4 bg-red-500/10 text-red-600 rounded-2xl hover:bg-red-500 hover:text-white transition-all"
                         title="Reject Tour"

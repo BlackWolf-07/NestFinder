@@ -11,26 +11,26 @@ exports.addReview = async (req, res) => {
     };
 
     const id = await Review.create(reviewData);
-    res.status(201).json({ message: 'Review added successfully', id });
+    res.status(201).json({ success: true, message: 'Review added successfully', id });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add review' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to add review' });
   }
 };
 
 exports.getPropertyReviews = async (req, res) => {
   try {
     const reviews = await Review.getByProperty(req.params.propertyId);
-    res.json(reviews);
+    res.json({ success: true, data: reviews });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch reviews' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch reviews' });
   }
 };
 
 exports.deleteReview = async (req, res) => {
   try {
     await Review.delete(req.params.id, req.user.id);
-    res.json({ message: 'Review deleted successfully' });
+    res.json({ success: true, message: 'Review deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete review' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to delete review' });
   }
 };

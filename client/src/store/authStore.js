@@ -9,12 +9,12 @@ const useAuthStore = create(
       token: localStorage.getItem('token') || null,
       isAuthenticated: !!localStorage.getItem('token'),
       loading: !!localStorage.getItem('token'),
-      
+
       setAuth: (user, token) => {
         set({ user, token, isAuthenticated: true, loading: false });
         localStorage.setItem('token', token);
       },
-      
+
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false });
         localStorage.removeItem('token');
@@ -29,8 +29,10 @@ const useAuthStore = create(
 
         set({ loading: true });
         try {
-          const user = await getMe();
-          set({ user, token, isAuthenticated: true, loading: false });
+          const response = await getMe();
+          // The API now returns { success: true, user: ... }
+          const userData = response.success ? response.user : response;
+          set({ user: userData, token, isAuthenticated: true, loading: false });
         } catch (error) {
           console.error('Session validation failed:', error);
           set({ user: null, token: null, isAuthenticated: false, loading: false });

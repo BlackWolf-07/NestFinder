@@ -2,17 +2,14 @@ const Property = require('../models/Property');
 
 exports.createProperty = async (req, res) => {
   try {
-    console.log("Request body:", req.body);
-    console.log("Request files:", req.files);
-    
     if (!req.user || !req.user.id) {
-        throw new Error("User authentication context missing.");
+        return res.status(401).json({ success: false, error: "User authentication context missing." });
     }
 
     const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-    
+
     if (images.length === 0) {
-        throw new Error("No images uploaded.");
+        return res.status(400).json({ success: false, error: "No images uploaded." });
     }
 
     const propertyData = {
@@ -26,70 +23,67 @@ exports.createProperty = async (req, res) => {
     };
 
     const id = await Property.create(propertyData);
-    console.log("Property saved with ID:", id);
-    res.status(200).json({ message: "Property created", id });
+    res.status(201).json({ success: true, message: "Property created", id });
   } catch (error) {
     console.error("Submission Error:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, error: error.message || "Failed to create property" });
   }
 };
 
 exports.getProperties = async (req, res) => {
   try {
     const data = await Property.getAll(req.query);
-    res.json(data);
+    res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch properties' });
+    res.status(500).json({ success: false, error: 'Failed to fetch properties' });
   }
 };
 
 exports.getMyProperties = async (req, res) => {
   try {
     const properties = await Property.getByOwner(req.user.id);
-    res.json(properties);
+    res.json({ success: true, properties });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch your properties' });
+    res.status(500).json({ success: false, error: 'Failed to fetch your properties' });
   }
 };
 
 exports.getPropertyDetails = async (req, res) => {
   try {
     const property = await Property.getById(req.params.id);
-    if (!property) return res.status(404).json({ error: 'Property not found' });
-    res.json(property);
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
+    res.json({ success: true, property });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 };
 
 exports.updateProperty = async (req, res) => {
   try {
     const property = await Property.getById(req.params.id);
-    if (!property) return res.status(404).json({ error: 'Property not found' });
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
     if (property.ownerId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Unauthorized' });
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
 
     await Property.update(req.params.id, req.body);
-    res.json({ message: 'Property updated successfully' });
+    res.json({ success: true, message: 'Property updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update property' });
+    res.status(500).json({ success: false, error: 'Failed to update property' });
   }
 };
 
 exports.deleteProperty = async (req, res) => {
   try {
     const property = await Property.getById(req.params.id);
-    if (!property) return res.status(404).json({ error: 'Property not found' });
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
     if (property.ownerId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Unauthorized' });
+      return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
 
     await Property.delete(req.params.id);
-    res.json({ message: 'Property deleted successfully' });
+    res.json({ success: true, message: 'Property deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to delete property' });
+    res.status(500).json({ success: false, error: 'Failed to delete property' });
   }
 };
-
-

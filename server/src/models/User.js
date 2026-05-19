@@ -43,6 +43,17 @@ const User = {
       ) ENGINE=InnoDB;
     `;
     await db.execute(query);
+
+    // FIX: Add isVerified column if it doesn't exist (for existing tables)
+    try {
+        await db.execute('ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT FALSE');
+        console.log('[DB] Column isVerified added to users table');
+    } catch (err) {
+        // Error code ER_DUP_COLUMN_NAME (1060) means column already exists
+        if (err.errno !== 1060 && err.code !== 'ER_DUP_COLUMN_NAME') {
+            console.error('[DB] Error adding isVerified column:', err.message);
+        }
+    }
   }
 };
 

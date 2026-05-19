@@ -15,7 +15,7 @@ import L from 'leaflet';
 import ChatBot from '../components/ChatBot';
 import Navbar from '../components/Navbar';
 import { Card, PremiumButton, Badge, Skeleton, FuturisticInput } from '../components/UIElements';
-import { MapPin, Calendar, Clock, Phone, Mail, ShieldCheck, Flag, Star, ChevronLeft, Zap, Sparkles, MessageSquare } from 'lucide-react';
+import { MapPin, Calendar, Clock, Phone, Mail, ShieldCheck, Flag, Star, ChevronLeft, Zap, Sparkles, MessageSquare, ChevronRight, Home } from 'lucide-react';
 
 // Fix for default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -46,20 +46,28 @@ export default function PropertyDetails() {
   useEffect(() => {
     fetchData();
     fetchReviews();
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await getPropertyDetails(id);
+      const response = await getPropertyDetails(id);
+      // Fixed response handling
+      const data = response.success ? response.property : response;
       setProperty(data);
 
       if (isAuthenticated) {
-        const favorites = await getMyFavorites();
-        setIsFavorite(favorites.some(f => f.id === parseInt(id)));
+        try {
+            const favoritesRes = await getMyFavorites();
+            const favorites = favoritesRes.success ? favoritesRes.favorites : (Array.isArray(favoritesRes) ? favoritesRes : []);
+            setIsFavorite(favorites.some(f => f.id === parseInt(id)));
+        } catch (fErr) {
+            console.error("Failed to fetch favorites", fErr);
+        }
       }
     } catch (err) {
       console.error(err);
+      toast.error("Failed to fetch property details");
     } finally {
       setLoading(false);
     }
@@ -67,8 +75,9 @@ export default function PropertyDetails() {
 
   const fetchReviews = async () => {
     try {
-      const { data } = await getReviews(id);
-      setReviews(data);
+      const response = await getReviews(id);
+      const data = response.success ? response.data : response;
+      setReviews(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
     }
@@ -151,14 +160,30 @@ export default function PropertyDetails() {
 
   if (!property) return <div className="p-20 text-center text-4xl font-black text-accent italic animate-float">SIGNAL LOST: PROPERTY NOT FOUND</div>;
 
-  const images = property.images ? JSON.parse(property.images) : [];
-  const amenities = property.amenities ? JSON.parse(property.amenities) : [];
-  const neighborhood = property.neighborhood ? (typeof property.neighborhood === 'string' ? JSON.parse(property.neighborhood) : property.neighborhood) : {};
+  // Safe Image Parsing
+  let images = [];
+  try {
+    images = typeof property.images === 'string' ? JSON.parse(property.images) : (property.images || []);
+  } catch (e) {
+    console.error("Image parsing failed", e);
+    images = [];
+  }
+
+  // Safe Amenities Parsing
+  let amenities = [];
+  try {
+    amenities = typeof property.amenities === 'string' ? JSON.parse(property.amenities) : (property.amenities || []);
+  } catch (e) {
+    console.error("Amenities parsing failed", e);
+    amenities = [];
+  }
+
+  const neighborhood = property.neighborhood ? (typeof property.neighborhood === 'string' ? JSON.parse(property.neighborhood) : property.neighborhood) : {};        
 
   return (
     <div className="bg-background min-h-screen text-white">
       <Navbar />
-      
+
       {/* Background Decorative Blobs */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-1/4 -left-24 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
@@ -168,7 +193,7 @@ export default function PropertyDetails() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 pt-32">
         {/* Navigation Breadcrumb */}
         <div className="flex justify-between items-center mb-12">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center text-sm font-black text-text-muted"
@@ -181,7 +206,7 @@ export default function PropertyDetails() {
             <span className="mx-4 opacity-20">/</span>
             <span className="truncate max-w-[200px] opacity-60 italic">{property.title}</span>
           </motion.div>
-          
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             onClick={() => setShowReportModal(true)}
@@ -202,7 +227,7 @@ export default function PropertyDetails() {
                 className="h-[650px] rounded-[48px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative border border-white/10 group"
               >
                 <img
-                  src={images[activeImage] ? `http://localhost:5000${images[activeImage]}` : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200'}
+                  src={images[activeImage] ? (images[activeImage].startsWith('http') ? images[activeImage] : `http://localhost:5000${images[activeImage]}`) : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200'}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
                 <div className="absolute top-10 left-10 flex flex-col gap-4">
@@ -215,16 +240,16 @@ export default function PropertyDetails() {
                     </Badge>
                   )}
                 </div>
-                
+
                 {/* Image Navigation Arrows */}
                 <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
+                  <button
                     onClick={() => setActiveImage(p => p > 0 ? p - 1 : images.length - 1)}
                     className="p-4 rounded-2xl glass-light border-white/20 pointer-events-auto hover:bg-white/20 transition-all"
                   >
                     <ChevronLeft className="w-6 h-6" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveImage(p => p < images.length - 1 ? p + 1 : 0)}
                     className="p-4 rounded-2xl glass-light border-white/20 pointer-events-auto hover:bg-white/20 transition-all"
                   >
@@ -242,7 +267,7 @@ export default function PropertyDetails() {
                     onClick={() => setActiveImage(idx)}
                     className={`flex-shrink-0 w-36 h-36 rounded-3xl overflow-hidden cursor-pointer border-2 transition-all duration-500 ${activeImage === idx ? 'border-primary shadow-[0_0_20px_rgba(99,102,241,0.4)] scale-110' : 'border-white/5 opacity-40 hover:opacity-100'}`}
                   >
-                    <img src={`http://localhost:5000${img}`} className="w-full h-full object-cover" />
+                    <img src={img.startsWith('http') ? img : `http://localhost:5000${img}`} className="w-full h-full object-cover" />
                   </motion.div>
                 ))}
               </div>
@@ -252,7 +277,7 @@ export default function PropertyDetails() {
             <section className="space-y-12">
               <div className="flex flex-col md:flex-row justify-between items-start gap-8">
                 <div className="flex-1">
-                  <motion.h1 
+                  <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-6xl font-black text-white tracking-tighter mb-6 leading-[0.9]"
@@ -312,10 +337,10 @@ export default function PropertyDetails() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {amenities.map(item => (
-                    <motion.div 
-                      key={item} 
+                    <motion.div
+                      key={item}
                       whileHover={{ x: 10 }}
-                      className="flex items-center gap-4 p-5 glass-light border-white/5 rounded-3xl font-black text-sm uppercase tracking-widest text-white group"
+                      className="flex items-center gap-4 p-5 glass-light border-white/5 rounded-3xl font-black text-sm uppercase tracking-widest text-white group"  
                     >
                       <div className="w-3 h-3 bg-primary rounded-full shadow-[0_0_15px_rgba(99,102,241,0.8)] group-hover:scale-150 transition-transform" />
                       {item}
@@ -329,10 +354,10 @@ export default function PropertyDetails() {
                 <h3 className="text-3xl font-black tracking-tighter">Neighborhood Intelligence</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {[
-                    { title: 'Education', icon: 'ðŸ«', list: neighborhood.schools || ["Prime Academy", "Global Nexus University"], color: 'primary' },
-                    { title: 'Healthcare', icon: 'ðŸ¥', list: neighborhood.hospitals || ["Bio-Care Hospital", "Quantum Clinic"], color: 'accent' },
-                    { title: 'Connectivity', icon: 'ðŸš†', list: neighborhood.transport || ["Hyperloop Hub", "Sky-Station Alpha"], color: 'primary' },
-                    { title: 'Lifestyle', icon: 'ðŸ›’', list: neighborhood.markets || ["Fusion Mall", "Cyber Plaza"], color: 'accent' }
+                    { title: 'Education', icon: 'Ã°Å¸Â«', list: neighborhood.schools || ["Prime Academy", "Global Nexus University"], color: 'primary' },
+                    { title: 'Healthcare', icon: 'Ã°Å¸Â¥', list: neighborhood.hospitals || ["Bio-Care Hospital", "Quantum Clinic"], color: 'accent' },
+                    { title: 'Connectivity', icon: 'Ã°Å¸Å¡â€ ', list: neighborhood.transport || ["Hyperloop Hub", "Sky-Station Alpha"], color: 'primary' },
+                    { title: 'Lifestyle', icon: 'Ã°Å¸â€ºâ€™', list: neighborhood.markets || ["Fusion Mall", "Cyber Plaza"], color: 'accent' }
                   ].map((cat, i) => (
                     <div key={i} className="glass-card p-1 group">
                       <div className="bg-secondary/40 p-8 rounded-[30px] flex gap-6 h-full">
@@ -377,7 +402,7 @@ export default function PropertyDetails() {
                           onClick={() => setNewReview({ ...newReview, rating: star })}
                           className={`text-4xl transition-all ${newReview.rating >= star ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 'text-white/10'}`}
                         >
-                          â˜…
+                          Ã¢Ëœâ€¦
                         </motion.button>
                       ))}
                     </div>
@@ -409,7 +434,7 @@ export default function PropertyDetails() {
                           </div>
                           <div>
                             <p className="font-black text-xl text-white">{review.userName || 'Anonymous User'}</p>
-                            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em]">{new Date(review.createdAt).toLocaleDateString()}</p>
+                            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em]">{new Date(review.createdAt).toLocaleDateString()}</p>  
                           </div>
                         </div>
                         <div className="flex gap-1 text-yellow-400">
@@ -467,7 +492,7 @@ export default function PropertyDetails() {
                     <PremiumButton
                       type="submit"
                       disabled={bookingLoading}
-                      className="w-full py-6 !rounded-3xl text-xl shadow-[0_10px_30px_rgba(99,102,241,0.3)] hover:shadow-[0_15px_40px_rgba(99,102,241,0.5)]"
+                      className="w-full py-6 !rounded-3xl text-xl shadow-[0_10px_30px_rgba(99,102,241,0.3)] hover:shadow-[0_15px_40px_rgba(99,102,241,0.5)]"        
                     >
                       {bookingLoading ? 'Synchronizing...' : 'Initialize Mission'}
                     </PremiumButton>
@@ -496,7 +521,7 @@ export default function PropertyDetails() {
 
                   <div className="mt-12 h-72 rounded-[40px] overflow-hidden grayscale contrast-150 border-4 border-white/5 relative group">
                     <div className="absolute inset-0 z-10 pointer-events-none border-[20px] border-secondary-dark/80 rounded-[40px] group-hover:opacity-0 transition-opacity" />
-                    <MapContainer center={[property.latitude || 20.5937, property.longitude || 78.9629]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                    <MapContainer center={[property.latitude || 20.5937, property.longitude || 78.9629]} zoom={13} style={{ height: '100%', width: '100%' }}>       
                       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                       <Marker position={[property.latitude || 20.5937, property.longitude || 78.9629]}>
                         <Popup>{property.title}</Popup>
@@ -518,7 +543,7 @@ export default function PropertyDetails() {
       <AnimatePresence>
         {showReportModal && (
           <div className="fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-[70] p-6">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.8, opacity: 0, rotate: -5 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               exit={{ scale: 0.8, opacity: 0, rotate: 5 }}
@@ -529,7 +554,7 @@ export default function PropertyDetails() {
                    <Flag className="w-10 h-10" />
                    <h2 className="text-4xl font-black tracking-tighter uppercase italic">Anomaly Detected</h2>
                 </div>
-                <p className="text-text-muted font-bold text-lg opacity-80">Describe the protocol violation or data inaccuracy detected in this listing.</p>
+                <p className="text-text-muted font-bold text-lg opacity-80">Describe the protocol violation or data inaccuracy detected in this listing.</p>        
                 <textarea
                   className="w-full bg-white/5 border border-white/10 p-8 rounded-[32px] h-48 outline-none focus:border-accent/50 font-black text-white placeholder:text-gray-700 transition-all shadow-inner"
                   placeholder="Input anomaly data here..."

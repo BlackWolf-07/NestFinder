@@ -2,27 +2,30 @@ const Favorite = require('../models/Favorite');
 
 exports.addToFavorites = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) return res.status(401).json({ success: false, error: 'Unauthorized' });
     await Favorite.add(req.user.id, req.body.propertyId);
-    res.json({ message: 'Added to favorites' });
+    res.json({ success: true, message: 'Added to favorites' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to add to favorites' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to add to favorites' });
   }
 };
 
 exports.removeFromFavorites = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) return res.status(401).json({ success: false, error: 'Unauthorized' });
     await Favorite.remove(req.user.id, req.params.propertyId);
-    res.json({ message: 'Removed from favorites' });
+    res.json({ success: true, message: 'Removed from favorites' });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to remove from favorites' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to remove from favorites' });
   }
 };
 
 exports.getMyFavorites = async (req, res) => {
   try {
+    if (!req.user || !req.user.id) return res.status(401).json({ success: false, error: 'Unauthorized' });
     const favorites = await Favorite.getByUser(req.user.id);
-    res.json(favorites);
+    res.json({ success: true, favorites });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch favorites' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch favorites' });
   }
 };

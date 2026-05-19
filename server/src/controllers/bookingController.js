@@ -6,7 +6,7 @@ const { generateRentalAgreement } = require('../services/pdfService');
 exports.createBooking = async (req, res) => {
   try {
     const property = await Property.getById(req.body.propertyId);
-    if (!property) return res.status(404).json({ error: 'Property not found' });
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
 
     const bookingId = await Booking.create({
       userId: req.user.id,
@@ -16,9 +16,9 @@ exports.createBooking = async (req, res) => {
       visitTime: req.body.visitTime
     });
 
-    res.status(201).json({ message: 'Visit scheduled successfully', bookingId });
+    res.status(201).json({ success: true, message: 'Visit scheduled successfully', bookingId });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to schedule visit' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to schedule visit' });
   }
 };
 
@@ -30,25 +30,26 @@ exports.getMyBookings = async (req, res) => {
     } else {
       bookings = await Booking.getByUser(req.user.id);
     }
-    res.json(bookings);
+    res.json({ success: true, bookings });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch bookings' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to fetch bookings' });
   }
 };
 
 exports.updateBookingStatus = async (req, res) => {
   try {
     await Booking.updateStatus(req.params.id, req.body.status);
-    res.json({ message: 'Booking status updated' });
+    res.json({ success: true, message: 'Booking status updated' });
   } catch (error) {
-    res.status(500).json({ error: 'Update failed' });
+    res.status(500).json({ success: false, error: error.message || 'Update failed' });
   }
 };
 
 exports.downloadAgreement = async (req, res) => {
   try {
-    const booking = await Booking.getByUser(req.user.id).then(rows => rows.find(r => r.id === parseInt(req.params.id)));
-    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    const bookings = await (req.user.role === 'owner' ? Booking.getByOwner(req.user.id) : Booking.getByUser(req.user.id));
+    const booking = bookings.find(r => r.id === parseInt(req.params.id));
+    if (!booking) return res.status(404).json({ success: false, error: 'Booking not found' });
 
     const property = await Property.getById(booking.propertyId);
     const owner = await User.findById(booking.ownerId);
@@ -65,10 +66,10 @@ exports.downloadAgreement = async (req, res) => {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=Agreement_${booking.id}.pdf`);
-    
+
     generateRentalAgreement(res, agreementData);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to generate agreement' });
+    res.status(500).json({ success: false, error: error.message || 'Failed to generate agreement' });
   }
 };
