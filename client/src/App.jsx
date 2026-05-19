@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect, useState, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import UIProvider from './components/UIProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Skeleton } from './components/UIElements';
@@ -17,20 +18,54 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const PageLoader = () => (
-  <div className="p-8 max-w-7xl mx-auto space-y-8">
-    <Skeleton className="h-64 w-full" />
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <Skeleton className="h-48" />
-      <Skeleton className="h-48" />
-      <Skeleton className="h-48" />
+  <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen flex flex-col justify-center">
+    <div className="space-y-4 animate-pulse">
+      <div className="h-12 bg-white/5 rounded-2xl w-1/4 mx-auto" />
+      <div className="h-64 bg-white/5 rounded-[40px] w-full" />
+      <div className="grid grid-cols-3 gap-6">
+        <div className="h-40 bg-white/5 rounded-3xl" />
+        <div className="h-40 bg-white/5 rounded-3xl" />
+        <div className="h-40 bg-white/5 rounded-3xl" />
+      </div>
     </div>
   </div>
 );
+
+const CursorGlow = memo(() => {
+  const [mousePos, setMousePos] = useState({ x: -100, y: -100 });
+
+  useEffect(() => {
+    let frameId;
+    const handleMouseMove = (e) => {
+      frameId = window.requestAnimationFrame(() => {
+        setMousePos({ x: e.clientX, y: e.clientY });
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
+  return (
+    <div 
+      className="cursor-glow hidden lg:block pointer-events-none fixed z-0" 
+      style={{ 
+        left: mousePos.x, 
+        top: mousePos.y,
+        opacity: mousePos.x === -100 ? 0 : 1,
+        willChange: 'transform'
+      }}
+    />
+  );
+});
 
 function App() {
   return (
     <UIProvider>
       <Router>
+        <CursorGlow />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
