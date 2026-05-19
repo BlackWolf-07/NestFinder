@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UIProvider from './components/UIProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Skeleton } from './components/UIElements';
+import useAuthStore from './store/authStore';
 
 const Home = lazy(() => import('./pages/Home'));
 const Discover = lazy(() => import('./pages/Discover'));
@@ -63,6 +64,12 @@ const CursorGlow = memo(() => {
 });
 
 function App() {
+  const checkSession = useAuthStore(state => state.checkSession);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
+
   return (
     <UIProvider>
       <Router>

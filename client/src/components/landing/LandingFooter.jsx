@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Twitter, Instagram, Github, Mail, ArrowUp } from 'lucide-react';
+import { Home, Send, Camera, Globe, Mail, ArrowUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function LandingFooter() {
@@ -25,7 +25,7 @@ export default function LandingFooter() {
                 Redefining the architectural search experience through neural discovery and immersive design protocols.
              </p>
              <div className="flex gap-4">
-                {[Twitter, Instagram, Github].map((Icon, i) => (
+                {[Send, Camera, Globe].map((Icon, i) => (
                   <motion.a 
                     key={i} 
                     href="#" 

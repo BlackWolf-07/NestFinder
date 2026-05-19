@@ -2,21 +2,28 @@ const db = require('../config/db');
 
 const User = {
   create: async (userData) => {
-    const { name, email, phone, password, role } = userData;
+    const { name, email, phone, password, role, isVerified } = userData;
     const [result] = await db.execute(
-      'INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)',
-      [name, email, phone, password, role || 'buyer']
+      'INSERT INTO users (name, email, phone, password, role, isVerified) VALUES (?, ?, ?, ?, ?, ?)',
+      [name || null, email || null, phone || null, password || null, role || 'buyer', isVerified || false]
     );
     return result.insertId;
   },
 
   findByEmail: async (email) => {
+    if (!email) return null;
     const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
     return rows[0];
   },
 
+  findByPhone: async (phone) => {
+    if (!phone) return null;
+    const [rows] = await db.execute('SELECT * FROM users WHERE phone = ?', [phone]);
+    return rows[0];
+  },
+
   findById: async (id) => {
-    const [rows] = await db.execute('SELECT id, name, email, phone, role, profileImage, createdAt FROM users WHERE id = ?', [id]);
+    const [rows] = await db.execute('SELECT id, name, email, phone, role, profileImage, isVerified, createdAt FROM users WHERE id = ?', [id]);
     return rows[0];
   },
 
@@ -25,12 +32,13 @@ const User = {
     const query = `
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        phone VARCHAR(20),
-        password VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
+        email VARCHAR(255) UNIQUE,
+        phone VARCHAR(20) UNIQUE,
+        password VARCHAR(255),
         role ENUM('admin', 'owner', 'buyer') DEFAULT 'buyer',
         profileImage VARCHAR(255),
+        isVerified BOOLEAN DEFAULT FALSE,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB;
     `;

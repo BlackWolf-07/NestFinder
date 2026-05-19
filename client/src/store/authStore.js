@@ -1,15 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getMe } from '../api/auth';
 
 const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
-      token: null,
-      isAuthenticated: false,
+      token: localStorage.getItem('token') || null,
+      isAuthenticated: !!localStorage.getItem('token'),
+      loading: !!localStorage.getItem('token'),
       
       setAuth: (user, token) => {
-        set({ user, token, isAuthenticated: true });
+        set({ user, token, isAuthenticated: true, loading: false });
         localStorage.setItem('token', token);
       },
       
@@ -17,9 +19,28 @@ const useAuthStore = create(
         set({ user: null, token: null, isAuthenticated: false });
         localStorage.removeItem('token');
       },
+
+      checkSession: async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          set({ user: null, token: null, isAuthenticated: false, loading: false });
+          return;
+        }
+
+        set({ loading: true });
+        try {
+          const user = await getMe();
+          set({ user, token, isAuthenticated: true, loading: false });
+        } catch (error) {
+          console.error('Session validation failed:', error);
+          set({ user: null, token: null, isAuthenticated: false, loading: false });
+          localStorage.removeItem('token');
+        }
+      }
     }),
     {
       name: 'auth-storage',
+      partialize: (state) => ({ user: state.user, token: state.token, isAuthenticated: state.isAuthenticated }),
     }
   )
 );
