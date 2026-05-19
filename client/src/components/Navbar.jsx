@@ -25,7 +25,7 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { name: 'Discover', path: '/', icon: <Search className="w-4 h-4" /> },
+    { name: 'Discover', path: '/discover', icon: <Search className="w-4 h-4" /> },
     { name: 'Favorites', path: '/dashboard', icon: <Heart className="w-4 h-4" /> },
     { name: 'Bookings', path: '/bookings', icon: <Home className="w-4 h-4" /> },
   ];
@@ -40,7 +40,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group relative z-10">
-            <motion.div 
+            <motion.div
               whileHover={{ rotate: 15, scale: 1.1 }}
               className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20"
             >

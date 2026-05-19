@@ -134,3 +134,5 @@ body {
 .form-input:not(:placeholder-shown) ~ .floating-label {
   @apply -top-2 left-4 text-xs bg-secondary-dark px-2 text-primary font-bold;
 }
+
+@theme { --animate-spin-slow: spin 8s linear infinite; }

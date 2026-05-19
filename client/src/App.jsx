@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { Skeleton } from './components/UIElements';
 
 const Home = lazy(() => import('./pages/Home'));
+const Discover = lazy(() => import('./pages/Discover'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -69,6 +70,7 @@ function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/discover" element={<Discover />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/recommendations" element={<Recommendations />} />
             <Route
