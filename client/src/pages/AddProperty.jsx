@@ -120,7 +120,7 @@ export default function AddProperty() {
                 <input
                   {...register('title')}
                   placeholder="e.g. Modern 2BHK Apartment in Downtown"
-                  className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.title ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.title ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                 />
                 {errors.title && <p className="text-red-500 text-xs font-bold mt-1">{errors.title.message}</p>}
               </div>
@@ -130,7 +130,7 @@ export default function AddProperty() {
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Listing Type</label>
                   <select
                     {...register('type')}
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                    className="w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
                   >
                     {TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
                   </select>
@@ -139,7 +139,7 @@ export default function AddProperty() {
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Category</label>
                   <select
                     {...register('category')}
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                    className="w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
                   >
                     {CATEGORIES.map(c => <option key={c} value={c} className="uppercase">{c}</option>)}
                   </select>
@@ -159,7 +159,7 @@ export default function AddProperty() {
                   <input
                     {...register('city')}
                     placeholder="e.g. New York"
-                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.city ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.city ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                   />
                   {errors.city && <p className="text-red-500 text-xs font-bold mt-1">{errors.city.message}</p>}
                 </div>
@@ -168,7 +168,7 @@ export default function AddProperty() {
                   <input
                     {...register('locality')}
                     placeholder="e.g. Manhattan"
-                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.locality ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.locality ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                   />
                   {errors.locality && <p className="text-red-500 text-xs font-bold mt-1">{errors.locality.message}</p>}
                 </div>
@@ -189,7 +189,7 @@ export default function AddProperty() {
                       type="number"
                       placeholder="Enter price in â‚¹"
                       {...register('price')}
-                      className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                      className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                     />
                   </div>
                   {errors.price && <p className="text-red-500 text-xs font-bold mt-1">{errors.price.message}</p>}
@@ -200,7 +200,7 @@ export default function AddProperty() {
                     type="number"
                     {...register('bhk')}
                     placeholder="2"
-                    className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold ${errors.bhk ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.bhk ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                   />
                   {errors.bhk && <p className="text-red-500 text-xs font-bold mt-1">{errors.bhk.message}</p>}
                 </div>
@@ -208,7 +208,7 @@ export default function AddProperty() {
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Furnishing</label>
                   <select
                     {...register('furnishing')}
-                    className="w-full p-4 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                    className="w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
                   >
                     {FURNISHING.map(f => <option key={f} value={f}>{f.replace('-', ' ').toUpperCase()}</option>)}
                   </select>
@@ -277,7 +277,7 @@ export default function AddProperty() {
                   {...register('description')}
                   rows="6"
                   placeholder="Tell potential residents what makes your property special..."
-                  className={`w-full p-4 bg-gray-50 border-2 rounded-2xl outline-none transition-all font-bold resize-none ${errors.description ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold resize-none ${errors.description ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                 />
                 {errors.description && <p className="text-red-500 text-xs font-bold mt-1">{errors.description.message}</p>}
               </div>
