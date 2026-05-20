@@ -1,4 +1,5 @@
 const Property = require('../models/Property');
+const axios = require('axios');
 
 exports.createProperty = async (req, res) => {
   try {
@@ -10,16 +11,43 @@ exports.createProperty = async (req, res) => {
       ? req.files[0].path.replace(/\\/g, "/")
       : null;
 
+    let latitude = req.body.latitude || null;
+    let longitude = req.body.longitude || null;
+
+    const fullAddress = req.body.address || req.body.location || `${req.body.locality}, ${req.body.city}`;
+
+    // Geocoding logic
+    try {
+      const geoRes = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: {
+          q: fullAddress,
+          format: 'json',
+          limit: 1
+        },
+        headers: {
+          'User-Agent': 'NestFinder/1.0'
+        }
+      });
+
+      if (geoRes.data && geoRes.data.length > 0) {
+        latitude = geoRes.data[0].lat;
+        longitude = geoRes.data[0].lon;
+      }
+    } catch (geoErr) {
+      console.error("Geocoding failed:", geoErr.message);
+    }
+
     const propertyData = {
       ...req.body,
       ownerId: req.user.id,
       image,
+      address: req.body.address || req.body.location,
       contactNumber: req.body.contactNumber || null,
       isFeatured: req.body.isFeatured === 'true' || req.body.isFeatured === true ? 1 : 0,
       amenities: typeof req.body.amenities === "string" ? JSON.parse(req.body.amenities) : req.body.amenities,
       location: req.body.location || `${req.body.locality}, ${req.body.city}`,
-      latitude: req.body.latitude || null,
-      longitude: req.body.longitude || null
+      latitude,
+      longitude
     };
 
     const id = await Property.create(propertyData);
@@ -55,6 +83,7 @@ exports.getProperties = async (req, res) => {
     const data = await Property.getAll(req.query);
     res.json({ success: true, data });
   } catch (error) {
+    console.error("Fetch Properties Error:", error);
     res.status(500).json({ success: false, error: 'Failed to fetch properties' });
   }
 };

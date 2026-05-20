@@ -29,7 +29,7 @@ const schema = z.object({
   category: z.enum(['flat', 'house', 'PG', 'hostel', 'commercial']),
   city: z.string().min(1, 'City is required'),
   locality: z.string().min(1, 'Locality is required'),
-  location: z.string().optional(),
+  address: z.string().min(10, 'Full address must be at least 10 characters'),
   price: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Price must be a positive number'),
   bhk: z.string().refine(val => !isNaN(Number(val)) && Number(val) >= 0, 'BHK must be a number'),
   contactNumber: z.string().min(10, 'Contact number must be at least 10 digits'),
@@ -56,7 +56,7 @@ export default function AddProperty() {
       furnishing: 'unfurnished',
       city: '',
       locality: '',
-      location: '',
+      address: '',
       contactNumber: ''
     }
   });
@@ -111,6 +111,7 @@ export default function AddProperty() {
     Object.keys(data).forEach(key => {
       if (key === 'city') formData.append(key, finalCity);
       else if (key === 'locality') formData.append(key, finalLocality);
+      else if (key === 'address') formData.append(key, data.address);
       else formData.append(key, data[key]);
     });
     formData.append("amenities", JSON.stringify(amenities));
@@ -236,32 +237,24 @@ export default function AddProperty() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4">
-                <div>
-                  <button
-                    type="button"
-                    disabled={isAddressDisabled}
-                    onClick={() => setShowAddressField(!showAddressField)}
-                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all ${isAddressDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-secondary/10 text-secondary hover:bg-secondary/20'}`}
-                  >
-                    <Navigation className="w-4 h-4" /> {showAddressField ? 'Hide Address' : 'Add Address'}
-                  </button>
-                </div>
-
-                {showAddressField && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="space-y-2"
-                  >
-                    <label className="text-xs font-black text-text-muted uppercase tracking-widest">Full Address</label>
-                    <input
-                      {...register('location')}
-                      placeholder="e.g. Flat 101, Sunshine Apartments, Main Road"
-                      className="w-full p-4 bg-gray-50 text-gray-900 border-2 border-transparent focus:border-primary/20 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+              <div className="space-y-6">
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <Navigation className="w-5 h-5 text-primary" /> Full Address
+                </h2>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Property Location Signature</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-4 w-5 h-5 text-text-muted" />
+                    <textarea
+                      {...register('address')}
+                      rows="3"
+                      placeholder="e.g. Flat 101, Sunshine Apartments, Sector 5, Near Metro Station..."
+                      className={`w-full p-4 pl-12 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold resize-none ${errors.address ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                     />
-                  </motion.div>
-                )}
+                  </div>
+                  {errors.address && <p className="text-red-500 text-xs font-bold mt-1">{errors.address.message}</p>}
+                  <p className="text-[10px] text-text-muted font-black uppercase tracking-wider">Required for precise GPS synchronization on the map.</p>
+                </div>
               </div>
             </div>
 

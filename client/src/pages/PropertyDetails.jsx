@@ -31,7 +31,6 @@ export default function PropertyDetails() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
   const [visitDate, setVisitDate] = useState('');
   const [visitTime, setVisitTime] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -520,12 +519,27 @@ export default function PropertyDetails() {
 
                   <div className="mt-12 h-72 rounded-[40px] overflow-hidden grayscale contrast-150 border-4 border-white/5 relative group">
                     <div className="absolute inset-0 z-10 pointer-events-none border-[20px] border-secondary-dark/80 rounded-[40px] group-hover:opacity-0 transition-opacity" />
-                    <MapContainer center={[property.latitude || 20.5937, property.longitude || 78.9629]} zoom={13} style={{ height: '100%', width: '100%' }}>       
-                      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                      <Marker position={[property.latitude || 20.5937, property.longitude || 78.9629]}>
-                        <Popup>{property.title}</Popup>
-                      </Marker>
-                    </MapContainer>
+                    {property.latitude && property.longitude ? (
+                      <MapContainer 
+                        center={[parseFloat(property.latitude), parseFloat(property.longitude)]} 
+                        zoom={15} 
+                        style={{ height: '100%', width: '100%' }}
+                        scrollWheelZoom={false}
+                      >       
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <Marker position={[parseFloat(property.latitude), parseFloat(property.longitude)]}>
+                          <Popup className="font-black text-xs">
+                            <span className="text-primary">{property.title}</span> <br />
+                            <span className="text-gray-500 italic">{property.address || property.location}</span>
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 text-text-muted">
+                        <MapPin className="w-12 h-12 mb-2 opacity-20" />
+                        <p className="text-[10px] font-black uppercase tracking-widest">Location Coordinates Unavailable</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>

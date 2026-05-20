@@ -45,8 +45,14 @@ export default function Home() {
     try {
       const res = await getProperties(currentFilters || filters);
       console.log("Home: Fetch success.", res);
-      // FIXED: res is already response.data from the API helper
-      setData(res);
+      // res is { success: true, data: [...] }
+      const propertyList = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
+      setData({
+        properties: propertyList,
+        total: propertyList.length,
+        page: 1,
+        totalPages: 1
+      });
     } catch (err) {
       console.error("Home: Communication failure:", err);
       setError("Sector data unreachable. Offline cache engaged.");
