@@ -5,19 +5,20 @@ const Property = {
     const {
       ownerId, title, type, category, location, address, city, locality,
       latitude, longitude, price, bhk, furnishing, amenities,
-      description, image, neighborhood, contactNumber, isFeatured
+      description, image, images, neighborhood, contactNumber, isFeatured
     } = propertyData;
 
     const [result] = await db.execute(
       `INSERT INTO properties (
         ownerId, title, type, category, location, address, city, locality,
         latitude, longitude, price, bhk, furnishing, amenities,
-        description, image, neighborhood, contactNumber, isFeatured, approvalStatus
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        description, image, images, neighborhood, contactNumber, isFeatured, approvalStatus
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         ownerId, title, type, category, location, address || null, city, locality,
         latitude || null, longitude || null, price, bhk, furnishing, JSON.stringify(amenities),
-        description, image || null, JSON.stringify(neighborhood || {}), contactNumber || null, isFeatured || 0, 'approved'
+        description, image || null, JSON.stringify(images || []), JSON.stringify(neighborhood || {}),
+        contactNumber || null, isFeatured || 0, 'approved'
       ]
     );
     return result.insertId;
@@ -26,7 +27,8 @@ const Property = {
   getFeatured: async () => {
     const [rows] = await db.execute(`
       SELECT * FROM properties
-      WHERE status = 'available'
+      WHERE isFeatured = 1
+      AND (status = 'available' OR status IS NULL)
       ORDER BY createdAt DESC
       LIMIT 8
     `);
@@ -121,9 +123,11 @@ const Property = {
         amenities JSON,
         description TEXT,
         image TEXT,
-        images JSON, contactPhone VARCHAR(20), contactNumber VARCHAR(20),
+        images JSON,
+        contactNumber VARCHAR(20),
         neighborhood JSON,
-        isVerified BOOLEAN DEFAULT FALSE, isFeatured BOOLEAN DEFAULT FALSE,
+        isVerified BOOLEAN DEFAULT FALSE,
+        isFeatured BOOLEAN DEFAULT FALSE,
         approvalStatus ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
         status ENUM('available', 'rented', 'sold') DEFAULT 'available',
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -131,6 +135,31 @@ const Property = {
       ) ENGINE=InnoDB;
     `;
     await db.execute(query);
+
+    // Auto-migrate: add missing columns to existing table
+    const migrations = [
+      `ALTER TABLE properties ADD COLUMN address TEXT`,
+      `ALTER TABLE properties ADD COLUMN image TEXT`,
+      `ALTER TABLE properties ADD COLUMN images JSON`,
+      `ALTER TABLE properties ADD COLUMN contactNumber VARCHAR(20)`,
+      `ALTER TABLE properties ADD COLUMN isFeatured BOOLEAN DEFAULT FALSE`,
+      `ALTER TABLE properties ADD COLUMN isVerified BOOLEAN DEFAULT FALSE`,
+      `ALTER TABLE properties ADD COLUMN latitude DECIMAL(10, 8)`,
+      `ALTER TABLE properties ADD COLUMN longitude DECIMAL(11, 8)`,
+      `ALTER TABLE properties ADD COLUMN neighborhood JSON`,
+    ];
+
+    for (const migration of migrations) {
+      try {
+        await db.execute(migration);
+      } catch (err) {
+        // Silently ignore "column already exists" errors (code 1060)
+        if (err.errno !== 1060) {
+          console.error('Migration warning:', err.message);
+        }
+      }
+    }
+    console.log('Properties table ready');
   }
 };
 

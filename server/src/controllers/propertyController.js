@@ -7,9 +7,15 @@ exports.createProperty = async (req, res) => {
       return res.status(401).json({ success: false, error: "User authentication context missing." });
     }
 
-    const image = req.files?.[0]?.path
-      ? req.files[0].path.replace(/\\/g, "/")
-      : null;
+    const images = req.files && req.files.length > 0
+      ? req.files.map(file => `/uploads/${file.filename}`)
+      : [];
+
+    const image = images.length > 0 ? images[0] : null;
+
+    if (!image) {
+      return res.status(400).json({ success: false, error: "No images uploaded." });
+    }
 
     let latitude = req.body.latitude || null;
     let longitude = req.body.longitude || null;
@@ -41,6 +47,7 @@ exports.createProperty = async (req, res) => {
       ...req.body,
       ownerId: req.user.id,
       image,
+      images,
       address: req.body.address || req.body.location,
       contactNumber: req.body.contactNumber || null,
       isFeatured: req.body.isFeatured === 'true' || req.body.isFeatured === true ? 1 : 0,
