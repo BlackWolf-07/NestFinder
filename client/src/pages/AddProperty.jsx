@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Upload, Home, MapPin, IndianRupee, Info, Check, Plus, X } from 'lucide-react';
+import { Upload, Home, MapPin, IndianRupee, Info, Check, Plus, X, Navigation, Phone } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { Card, PremiumButton, Skeleton } from '../components/UIElements';
 import API from '../api';
@@ -15,14 +15,24 @@ const TYPES = ['rent', 'buy'];
 const FURNISHING = ['unfurnished', 'semi-furnished', 'fully-furnished'];
 const AMENITIES_LIST = ["WiFi", "Parking", "Gym", "Lift", "Security", "Pool", "Garden"];
 
+const CITIES_DATA = {
+  "Mumbai": ["Andheri", "Bandra", "Juhu", "South Mumbai", "Powai"],
+  "Delhi": ["South Delhi", "Connaught Place", "Dwarka", "Rohini", "Saket"],
+  "Bangalore": ["Koramangala", "Indiranagar", "HSR Layout", "Whitefield", "Jayanagar"],
+  "Hyderabad": ["Banjara Hills", "Jubilee Hills", "Gachibowli", "Madhapur", "Kondapur"],
+  "Chennai": ["Adyar", "Besant Nagar", "T. Nagar", "Mylapore", "Velachery"]
+};
+
 const schema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   type: z.enum(['rent', 'buy']),
   category: z.enum(['flat', 'house', 'PG', 'hostel', 'commercial']),
-  city: z.string().min(2, 'City is required'),
-  locality: z.string().min(2, 'Locality is required'),
+  city: z.string().min(1, 'City is required'),
+  locality: z.string().min(1, 'Locality is required'),
+  location: z.string().optional(),
   price: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Price must be a positive number'),
   bhk: z.string().refine(val => !isNaN(Number(val)) && Number(val) >= 0, 'BHK must be a number'),
+  contactNumber: z.string().min(10, 'Contact number must be at least 10 digits'),
   furnishing: z.enum(['unfurnished', 'semi-furnished', 'fully-furnished']),
   description: z.string().min(20, 'Description must be at least 20 characters'),
 });
@@ -33,15 +43,34 @@ export default function AddProperty() {
   const [images, setImages] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [previews, setPreviews] = useState([]);
+  
+  const [customCity, setCustomCity] = useState('');
+  const [customLocality, setCustomLocality] = useState('');
+  const [showAddressField, setShowAddressField] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       type: 'rent',
       category: 'flat',
-      furnishing: 'unfurnished'
+      furnishing: 'unfurnished',
+      city: '',
+      locality: '',
+      location: '',
+      contactNumber: ''
     }
   });
+
+  const selectedCity = watch('city');
+  const selectedLocality = watch('locality');
+
+  // Reset locality if city changes
+  useEffect(() => {
+    if (selectedCity !== 'custom') {
+      setValue('locality', '');
+      setCustomLocality('');
+    }
+  }, [selectedCity, setValue]);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -67,45 +96,50 @@ export default function AddProperty() {
   };
 
   const onSubmit = async (data) => {
-    console.log("Submitting form data:", data);
+    const finalCity = data.city === 'custom' ? customCity : data.city;
+    const finalLocality = data.locality === 'custom' ? customLocality : data.locality;
+
+    if (!finalCity) return toast.error("City is required");
+    if (!finalLocality) return toast.error("Locality is required");
+
     if (images.length === 0) {
       return toast.error("Please upload at least one image");
     }
 
     setLoading(true);
     const formData = new FormData();
-    Object.keys(data).forEach(key => formData.append(key, data[key]));
+    Object.keys(data).forEach(key => {
+      if (key === 'city') formData.append(key, finalCity);
+      else if (key === 'locality') formData.append(key, finalLocality);
+      else formData.append(key, data[key]);
+    });
     formData.append("amenities", JSON.stringify(amenities));
+    formData.append("isFeatured", true);
     images.forEach(img => formData.append("images", img));
-
-    console.log("FormData entries:");
-    for (let pair of formData.entries()) {
-      console.log(pair[0], pair[1]);
-    }
 
     try {
       const response = await API.post("/properties/create", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      console.log("Submission success:", response.data);
       toast.success("Property listed successfully!");
-      // Instant Update Fix: Redirect to homepage to see the new listing
       window.location.href = "/";
     } catch (err) {
-      console.error("Submission error details:", err.response?.data);
       toast.error(err.response?.data?.error || "Failed to create listing");
     } finally {
       setLoading(false);
     }
   };
 
+  const isLocalityDisabled = !selectedCity || (selectedCity === 'custom' && !customCity);
+  const isAddressDisabled = isLocalityDisabled || !selectedLocality || (selectedLocality === 'custom' && !customLocality);
+
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-10">
-          <h1 className="text-4xl font-black text-secondary tracking-tight mb-2">List Your Property</h1>
-          <p className="text-text-muted font-medium">Reach thousands of potential residents in minutes.</p>
+          <h1 className="text-4xl font-black text-secondary tracking-tight mb-2">List Your Property</h1>        
+          <p className="text-text-muted font-medium">Reach thousands of potential residents in minutes.</p>     
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -122,7 +156,7 @@ export default function AddProperty() {
                   placeholder="e.g. Modern 2BHK Apartment in Downtown"
                   className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.title ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                 />
-                {errors.title && <p className="text-red-500 text-xs font-bold mt-1">{errors.title.message}</p>}
+                {errors.title && <p className="text-red-500 text-xs font-bold mt-1">{errors.title.message}</p>} 
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -130,7 +164,7 @@ export default function AddProperty() {
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Listing Type</label>
                   <select
                     {...register('type')}
-                    className="w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                    className="w-full p-4 bg-gray-50 text-gray-900 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
                   >
                     {TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
                   </select>
@@ -139,7 +173,7 @@ export default function AddProperty() {
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Category</label>
                   <select
                     {...register('category')}
-                    className="w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                    className="w-full p-4 bg-gray-50 text-gray-900 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
                   >
                     {CATEGORIES.map(c => <option key={c} value={c} className="uppercase">{c}</option>)}
                   </select>
@@ -155,23 +189,79 @@ export default function AddProperty() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">City</label>
-                  <input
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">City</label>  
+                  <select
                     {...register('city')}
-                    placeholder="e.g. New York"
-                    className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.city ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
-                  />
-                  {errors.city && <p className="text-red-500 text-xs font-bold mt-1">{errors.city.message}</p>}
+                    className={`w-full p-4 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold ${errors.city ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  >
+                    <option value="">Select City</option>
+                    {Object.keys(CITIES_DATA).map(city => <option key={city} value={city}>{city}</option>)}
+                    <option value="custom">Other (Type Custom)</option>
+                  </select>
+                  {selectedCity === 'custom' && (
+                    <input
+                      type="text"
+                      placeholder="e.g. Pune"
+                      value={customCity}
+                      onChange={(e) => setCustomCity(e.target.value)}
+                      className="w-full mt-2 p-4 bg-gray-50 text-gray-900 border-2 border-primary/20 rounded-2xl outline-none font-bold"
+                    />
+                  )}
+                  {errors.city && <p className="text-red-500 text-xs font-bold mt-1">{errors.city.message}</p>} 
                 </div>
+
                 <div className="space-y-2">
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Locality</label>
-                  <input
+                  <select
                     {...register('locality')}
-                    placeholder="e.g. Manhattan"
-                    className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.locality ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
-                  />
+                    disabled={isLocalityDisabled}
+                    className={`w-full p-4 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold ${isLocalityDisabled ? 'opacity-50 cursor-not-allowed' : ''} ${errors.locality ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  >
+                    <option value="">Select Locality</option>
+                    {selectedCity && CITIES_DATA[selectedCity] && CITIES_DATA[selectedCity].map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                    {selectedCity && <option value="custom">Other (Type Custom)</option>}
+                  </select>
+                  {selectedLocality === 'custom' && (
+                    <input
+                      type="text"
+                      placeholder="e.g. Koregaon Park"
+                      value={customLocality}
+                      onChange={(e) => setCustomLocality(e.target.value)}
+                      className="w-full mt-2 p-4 bg-gray-50 text-gray-900 border-2 border-primary/20 rounded-2xl outline-none font-bold"
+                    />
+                  )}
                   {errors.locality && <p className="text-red-500 text-xs font-bold mt-1">{errors.locality.message}</p>}
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div>
+                  <button
+                    type="button"
+                    disabled={isAddressDisabled}
+                    onClick={() => setShowAddressField(!showAddressField)}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-xs transition-all ${isAddressDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-secondary/10 text-secondary hover:bg-secondary/20'}`}
+                  >
+                    <Navigation className="w-4 h-4" /> {showAddressField ? 'Hide Address' : 'Add Address'}
+                  </button>
+                </div>
+
+                {showAddressField && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-2"
+                  >
+                    <label className="text-xs font-black text-text-muted uppercase tracking-widest">Full Address</label>
+                    <input
+                      {...register('location')}
+                      placeholder="e.g. Flat 101, Sunshine Apartments, Main Road"
+                      className="w-full p-4 bg-gray-50 text-gray-900 border-2 border-transparent focus:border-primary/20 focus:bg-white rounded-2xl outline-none transition-all font-bold"
+                    />
+                  </motion.div>
+                )}
               </div>
             </div>
 
@@ -181,34 +271,48 @@ export default function AddProperty() {
               <h2 className="text-xl font-black flex items-center gap-2">
                 <IndianRupee className="w-5 h-5 text-primary" /> Pricing & Configuration
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Price (INR)</label>
                   <div className="relative">
+                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
                     <input
                       type="number"
-                      placeholder="Enter price in â‚¹"
+                      placeholder="Enter price"
                       {...register('price')}
-                      className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                      className={`w-full p-4 pl-12 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold ${errors.price ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                     />
                   </div>
                   {errors.price && <p className="text-red-500 text-xs font-bold mt-1">{errors.price.message}</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">BHK</label>
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Contact Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                    <input
+                      type="text"
+                      placeholder="e.g. +91 9876543210"
+                      {...register('contactNumber')}
+                      className={`w-full p-4 pl-12 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold ${errors.contactNumber ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    />
+                  </div>
+                  {errors.contactNumber && <p className="text-red-500 text-xs font-bold mt-1">{errors.contactNumber.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">BHK</label>   
                   <input
                     type="number"
                     {...register('bhk')}
                     placeholder="2"
-                    className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold ${errors.bhk ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    className={`w-full p-4 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold ${errors.bhk ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                   />
-                  {errors.bhk && <p className="text-red-500 text-xs font-bold mt-1">{errors.bhk.message}</p>}
+                  {errors.bhk && <p className="text-red-500 text-xs font-bold mt-1">{errors.bhk.message}</p>}   
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">Furnishing</label>
                   <select
                     {...register('furnishing')}
-                    className="w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
+                    className="w-full p-4 bg-gray-50 text-gray-900 border-2 border-transparent rounded-2xl outline-none focus:border-primary/20 focus:bg-white transition-all font-bold"
                   >
                     {FURNISHING.map(f => <option key={f} value={f}>{f.replace('-', ' ').toUpperCase()}</option>)}
                   </select>
@@ -277,7 +381,7 @@ export default function AddProperty() {
                   {...register('description')}
                   rows="6"
                   placeholder="Tell potential residents what makes your property special..."
-                  className={`w-full p-4 bg-gray-50 text-gray-900 placeholder:text-gray-400 border-2 rounded-2xl outline-none transition-all font-bold resize-none ${errors.description ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                  className={`w-full p-4 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold resize-none ${errors.description ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
                 />
                 {errors.description && <p className="text-red-500 text-xs font-bold mt-1">{errors.description.message}</p>}
               </div>

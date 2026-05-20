@@ -5,22 +5,32 @@ const Property = {
     const {
       ownerId, title, type, category, location, city, locality,
       latitude, longitude, price, bhk, furnishing, amenities,
-      description, images, neighborhood
+      description, image, neighborhood, contactNumber, isFeatured
     } = propertyData;
 
     const [result] = await db.execute(
       `INSERT INTO properties (
         ownerId, title, type, category, location, city, locality,
         latitude, longitude, price, bhk, furnishing, amenities,
-        description, images, neighborhood
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        description, image, neighborhood, contactNumber, isFeatured, approvalStatus
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         ownerId, title, type, category, location, city, locality,
         latitude, longitude, price, bhk, furnishing, JSON.stringify(amenities),
-        description, JSON.stringify(images), JSON.stringify(neighborhood || {})
+        description, image || null, JSON.stringify(neighborhood || {}), contactNumber || null, isFeatured || 0, 'approved'
       ]
     );
     return result.insertId;
+  },
+
+  getFeatured: async () => {
+    const [rows] = await db.execute(`
+      SELECT * FROM properties
+      WHERE isFeatured = 1
+      ORDER BY createdAt DESC
+      LIMIT 8
+    `);
+    return rows;
   },
 
   getAll: async (filters = {}) => {
@@ -91,6 +101,11 @@ const Property = {
     return rows[0];
   },
 
+  findById: async (id) => {
+    const [rows] = await db.execute('SELECT * FROM properties WHERE id = ?', [id]);
+    return rows[0];
+  },
+
   update: async (id, updateData) => {
     const fields = Object.keys(updateData);
     if (fields.length === 0) return;
@@ -135,7 +150,8 @@ const Property = {
         furnishing ENUM('unfurnished', 'semi-furnished', 'fully-furnished') DEFAULT 'unfurnished',
         amenities JSON,
         description TEXT,
-        images JSON,
+        image TEXT,
+        images JSON, contactPhone VARCHAR(20), contactNumber VARCHAR(20),
         neighborhood JSON,
         isVerified BOOLEAN DEFAULT FALSE, isFeatured BOOLEAN DEFAULT FALSE,
         approvalStatus ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
@@ -149,3 +165,4 @@ const Property = {
 };
 
 module.exports = Property;
+

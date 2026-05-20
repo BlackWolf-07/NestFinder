@@ -3,19 +3,19 @@ const Property = require('../models/Property');
 exports.createProperty = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
-        return res.status(401).json({ success: false, error: "User authentication context missing." });
+      return res.status(401).json({ success: false, error: "User authentication context missing." });
     }
 
-    const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-
-    if (images.length === 0) {
-        return res.status(400).json({ success: false, error: "No images uploaded." });
-    }
+    const image = req.files?.[0]?.path
+      ? req.files[0].path.replace(/\\/g, "/")
+      : null;
 
     const propertyData = {
       ...req.body,
       ownerId: req.user.id,
-      images,
+      image,
+      contactNumber: req.body.contactNumber || null,
+      isFeatured: req.body.isFeatured === 'true' || req.body.isFeatured === true ? 1 : 0,
       amenities: typeof req.body.amenities === "string" ? JSON.parse(req.body.amenities) : req.body.amenities,
       location: req.body.location || `${req.body.locality}, ${req.body.city}`,
       latitude: req.body.latitude || null,
@@ -23,10 +23,30 @@ exports.createProperty = async (req, res) => {
     };
 
     const id = await Property.create(propertyData);
-    res.status(201).json({ success: true, message: "Property created", id });
+    return res.status(201).json({
+      success: true,
+      message: "Property created successfully",
+      id
+    });
   } catch (error) {
-    console.error("Submission Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Failed to create property" });
+    console.error("Create Property Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+
+exports.getFeaturedProperties = async (req, res) => {
+  try {
+    const data = await Property.getFeatured();
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error("Fetch Featured Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch featured properties",
+    });
   }
 };
 
@@ -45,6 +65,17 @@ exports.getMyProperties = async (req, res) => {
     res.json({ success: true, properties });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch your properties' });
+  }
+};
+
+exports.getPropertyById = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) return res.status(404).json({ message: "Property not found" });
+    return res.json(property);
+  } catch (err) {
+    console.error("Error fetching property:", err);
+    return res.status(500).json({ message: "Error fetching property" });
   }
 };
 

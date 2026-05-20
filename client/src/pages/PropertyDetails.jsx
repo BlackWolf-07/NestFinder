@@ -183,14 +183,9 @@ export default function PropertyDetails() {
 
   if (!property) return <div className="p-20 text-center text-4xl font-black text-accent italic animate-float">SIGNAL LOST: PROPERTY NOT FOUND</div>;
 
-  // Safe Image Parsing
-  let images = [];
-  try {
-    images = typeof property.images === 'string' ? JSON.parse(property.images) : (property.images || []);
-  } catch (e) {
-    console.error("Image parsing failed", e);
-    images = [];
-  }
+  const imageUrl = property.image 
+    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000/${property.image}`)
+    : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200';
 
   // Safe Amenities Parsing
   let amenities = [];
@@ -250,7 +245,8 @@ export default function PropertyDetails() {
                 className="h-[650px] rounded-[48px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative border border-white/10 group"
               >
                 <img
-                  src={images[activeImage] ? (images[activeImage].startsWith('http') ? images[activeImage] : `http://localhost:5000${images[activeImage]}`) : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200'}
+                  src={imageUrl}
+                  onError={(e) => e.target.src = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200"}
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
                 <div className="absolute top-10 left-10 flex flex-col gap-4">
@@ -263,37 +259,7 @@ export default function PropertyDetails() {
                     </Badge>
                   )}
                 </div>
-
-                {/* Image Navigation Arrows */}
-                <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => setActiveImage(p => p > 0 ? p - 1 : images.length - 1)}
-                    className="p-4 rounded-2xl glass-light border-white/20 pointer-events-auto hover:bg-white/20 transition-all"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-                  <button
-                    onClick={() => setActiveImage(p => p < images.length - 1 ? p + 1 : 0)}
-                    className="p-4 rounded-2xl glass-light border-white/20 pointer-events-auto hover:bg-white/20 transition-all"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                </div>
               </motion.div>
-
-              <div className="flex gap-5 overflow-x-auto pb-6 px-2 no-scrollbar">
-                {images.map((img, idx) => (
-                  <motion.div
-                    key={idx}
-                    whileHover={{ scale: 1.05, y: -5 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveImage(idx)}
-                    className={`flex-shrink-0 w-36 h-36 rounded-3xl overflow-hidden cursor-pointer border-2 transition-all duration-500 ${activeImage === idx ? 'border-primary shadow-[0_0_20px_rgba(99,102,241,0.4)] scale-110' : 'border-white/5 opacity-40 hover:opacity-100'}`}
-                  >
-                    <img src={img.startsWith('http') ? img : `http://localhost:5000${img}`} className="w-full h-full object-cover" />
-                  </motion.div>
-                ))}
-              </div>
             </div>
 
             {/* Core Info Architecture */}
@@ -538,7 +504,7 @@ export default function PropertyDetails() {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Voice Comms</p>
-                        <p className="font-black text-lg text-white">{property.phone || '+1 800-NEST-FIND'}</p>
+                        <p className="font-black text-lg text-white">{property.contactNumber || property.phone || '+1 800-NEST-FIND'}</p>
                       </div>
                     </motion.div>
                     <motion.div whileHover={{ x: 10 }} className="flex items-center gap-5 group cursor-pointer">
@@ -617,5 +583,3 @@ export default function PropertyDetails() {
     </div>
   );
 }
-
-

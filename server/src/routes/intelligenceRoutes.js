@@ -1,7 +1,7 @@
-const express = require(\"express\");
+const express = require("express");
 const router = express.Router();
-const { getLocationIntelligence } = require(\"../controllers/intelligenceController\");
+const { getLocationIntelligence } = require("../controllers/intelligenceController");
 
-router.get(\"/\", getLocationIntelligence);
+router.get("/", getLocationIntelligence);
 
 module.exports = router;

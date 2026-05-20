@@ -1,21 +1,13 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Bed, ShieldCheck, Star, ArrowUpRight } from 'lucide-react';
 import { Card, Badge, PremiumButton } from './UIElements';
 import { formatPrice } from '../utils/formatPrice';
 
 export default function PropertyCard({ property, index = 0 }) {
-  // Safe Image Parsing
-  let images = [];
-  try {
-    images = typeof property.images === 'string' ? JSON.parse(property.images) : (property.images || []);
-  } catch (e) {
-    console.error("Image parsing failed", e);
-    images = [];
-  }
-
-  const imageUrl = images.length > 0 
-    ? (images[0].startsWith('http') ? images[0] : `http://localhost:5000${images[0]}`)
+  const navigate = useNavigate();
+  const imageUrl = property.image 
+    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000/${property.image}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
 
   return (
@@ -30,6 +22,7 @@ export default function PropertyCard({ property, index = 0 }) {
           src={imageUrl}
           alt={property.title}
           className="w-full h-full object-cover"
+          onError={(e) => e.target.src = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800"}
         />
 
         {/* Overlays */}
@@ -54,14 +47,13 @@ export default function PropertyCard({ property, index = 0 }) {
         <div className="absolute inset-0 bg-gradient-to-t from-secondary via-transparent to-transparent opacity-60" />
 
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-90 group-hover:scale-100">
-           <Link to={`/properties/${property.id}`}>
             <motion.div
               whileHover={{ rotate: 45 }}
-              className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-secondary shadow-2xl"
+              onClick={() => navigate(`/property/${property.id}`)}
+              className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-secondary shadow-2xl cursor-pointer"
             >
               <ArrowUpRight className="w-8 h-8" />
             </motion.div>
-           </Link>
         </div>
       </div>
 
@@ -90,14 +82,13 @@ export default function PropertyCard({ property, index = 0 }) {
               </div>
             </div>
           </div>
-          <Link to={`/properties/${property.id}`}>
-            <motion.button
-              whileHover={{ x: 5 }}
-              className="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-tighter"
-            >
-              Inspect <ArrowUpRight className="w-4 h-4" />
-            </motion.button>
-          </Link>
+          <motion.button
+            whileHover={{ x: 5 }}
+            onClick={() => navigate(`/property/${property.id}`)}
+            className="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-tighter"
+          >
+            Inspect <ArrowUpRight className="w-4 h-4" />
+          </motion.button>
         </div>
       </div>
     </Card>

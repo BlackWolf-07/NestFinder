@@ -91,13 +91,24 @@ export default function Navbar() {
                   <p className="text-[10px] font-black text-text-muted uppercase tracking-wider">Active Nest</p>
                   <p className="text-sm font-black text-white">{user.name}</p>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => navigate('/dashboard')}
-                  className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30"
-                >
-                  <User className="w-5 h-5" />
-                </motion.button>
+                <div className="flex items-center space-x-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => navigate('/dashboard')}
+                    className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary border border-primary/30"
+                    title="Profile"
+                  >
+                    <User className="w-5 h-5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    onClick={handleLogout}
+                    className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-accent border border-accent/30"
+                    title="Logout"
+                  >
+                    <LogOut className="w-5 h-5" />
+                  </motion.button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">

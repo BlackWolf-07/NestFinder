@@ -3,25 +3,24 @@ import { ChevronRight, ArrowRight, MapPin, Bed, Star } from 'lucide-react';
 import { Badge, PremiumButton } from '../UIElements';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getProperties } from '../../api/property';
+import { getFeaturedProperties } from '../../api/property';
 
 const PropertySlide = ({ property }) => {
-  // Safe Image Parsing
-  let images = [];
-  try {
-    images = typeof property.images === 'string' ? JSON.parse(property.images) : (property.images || []);
-  } catch (e) {
-    console.error("Featured: Image parsing failed", e);
-    images = [];
-  }
-
-  const imageUrl = images.length > 0 
-    ? (images[0].startsWith('http') ? images[0] : `http://localhost:5000${images[0]}`)
+  const navigate = useNavigate();
+  const imageUrl = property.image 
+    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000/${property.image}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
+
+  const formattedPrice = new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(property.price);
 
   return (
     <motion.div
       whileHover={{ y: -10 }}
+      onClick={() => navigate(`/property/${property.id}`)}
       className="flex-shrink-0 w-[400px] group cursor-pointer"
     >
       <div className="glass p-1 rounded-[40px] border-white/5 bg-secondary/20 hover:border-primary/30 transition-all duration-500 overflow-hidden">
@@ -30,13 +29,14 @@ const PropertySlide = ({ property }) => {
             src={imageUrl}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
             alt={property.title}
+            onError={(e) => e.target.src = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800"}
           />
           <div className="absolute top-6 left-6 z-10">
              <Badge variant="glass" className="bg-black/50 backdrop-blur-md">Prime Sector</Badge>
           </div>
           <div className="absolute bottom-6 right-6 z-10">
              <div className="bg-white text-secondary px-4 py-2 rounded-2xl font-black text-lg shadow-2xl">
-                ${property.price}
+                {formattedPrice}
              </div>
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
@@ -84,9 +84,8 @@ export default function FeaturedProperties() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const data = await getProperties({ limit: 6 });
-        const propertyList = data.properties || data;
-        setProperties(Array.isArray(propertyList) ? propertyList : []);
+        const response = await getFeaturedProperties();
+        setProperties(response.data || response || []);
       } catch (error) {
         console.error("Failed to fetch featured properties:", error);
       } finally {

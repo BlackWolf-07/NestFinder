@@ -5,6 +5,11 @@ export const getProperties = async (filters) => {
   return response.data;
 };
 
+export const getFeaturedProperties = async () => {
+  const response = await API.get('/properties/featured');
+  return response.data;
+};
+
 export const getMyProperties = async () => {
   const response = await API.get('/properties/my');
   return response.data;
@@ -16,7 +21,7 @@ export const getPropertyDetails = async (id) => {
 };
 
 export const createProperty = async (formData) => {
-  const response = await API.post('/properties', formData, {
+  const response = await API.post('/properties/create', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
   return response.data;
