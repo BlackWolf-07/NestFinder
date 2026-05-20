@@ -40,6 +40,8 @@ export default function PropertyDetails() {
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [intelligence, setIntelligence] = useState(null);
+  const [intelLoading, setIntelLoading] = useState(false);
 
   const { isAuthenticated, user } = useAuthStore();
 
@@ -47,6 +49,27 @@ export default function PropertyDetails() {
     fetchData();
     fetchReviews();
   }, [id, isAuthenticated]);
+
+  useEffect(() => {
+    if (property?.city && property?.locality) {
+      fetchIntelligence();
+    }
+  }, [property]);
+
+  const fetchIntelligence = async () => {
+    setIntelLoading(true);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/location-intelligence?city=${property.city}&locality=${property.locality}`);
+      const result = await res.json();
+      if (result.success) {
+        setIntelligence(result.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch intelligence', err);
+    } finally {
+      setIntelLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -352,30 +375,40 @@ export default function PropertyDetails() {
               {/* Neighborhood Intelligence */}
               <div className="space-y-10 pt-16 border-t border-white/5">
                 <h3 className="text-3xl font-black tracking-tighter">Neighborhood Intelligence</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {[
-                    { title: 'Education', icon: 'Ã°Å¸Â«', list: neighborhood.schools || ["Prime Academy", "Global Nexus University"], color: 'primary' },
-                    { title: 'Healthcare', icon: 'Ã°Å¸Â¥', list: neighborhood.hospitals || ["Bio-Care Hospital", "Quantum Clinic"], color: 'accent' },
-                    { title: 'Connectivity', icon: 'Ã°Å¸Å¡â€ ', list: neighborhood.transport || ["Hyperloop Hub", "Sky-Station Alpha"], color: 'primary' },
-                    { title: 'Lifestyle', icon: 'Ã°Å¸â€ºâ€™', list: neighborhood.markets || ["Fusion Mall", "Cyber Plaza"], color: 'accent' }
-                  ].map((cat, i) => (
-                    <div key={i} className="glass-card p-1 group">
-                      <div className="bg-secondary/40 p-8 rounded-[30px] flex gap-6 h-full">
-                        <div className="text-5xl group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500">{cat.icon}</div>
-                        <div>
-                          <h4 className="font-black text-xl mb-3 text-white tracking-tight">{cat.title}</h4>
-                          <ul className="space-y-2">
-                            {cat.list.map((item, j) => (
-                              <li key={j} className="text-sm font-bold text-text-muted flex items-center gap-2 italic">
-                                <div className="w-1.5 h-1.5 bg-white/20 rounded-full" /> {item}
-                              </li>
-                            ))}
-                          </ul>
+                
+                {intelLoading ? (
+                  <div className="col-span-full py-10 flex flex-col items-center justify-center gap-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <p className="text-text-muted font-black uppercase tracking-widest text-xs">Syncing Locality Intelligence...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                    {[
+                      { title: 'Education', icon: '🎓', list: intelligence?.education || [], color: 'primary' },
+                      { title: 'Healthcare', icon: '🏥', list: intelligence?.healthcare || [], color: 'accent' },
+                      { title: 'Connectivity', icon: '🚉', list: intelligence?.connectivity || [], color: 'primary' },
+                      { title: 'Lifestyle', icon: '🛒', list: intelligence?.lifestyle || [], color: 'accent' }
+                    ].map((cat, i) => (
+                      <div key={i} className="glass-card p-1 group">
+                        <div className="bg-secondary/40 p-8 rounded-[30px] flex gap-6 h-full">
+                          <div className="text-5xl group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-500">{cat.icon}</div>
+                          <div>
+                            <h4 className="font-black text-xl mb-3 text-white tracking-tight">{cat.title}</h4>
+                            <ul className="space-y-2">
+                              {cat.list.length > 0 ? cat.list.map((item, j) => (
+                                <li key={j} className="text-sm font-bold text-text-muted flex items-center gap-2 italic">
+                                  <div className="w-1.5 h-1.5 bg-white/20 rounded-full" /> {item}
+                                </li>
+                              )) : (
+                                <li className="text-xs font-bold text-text-muted/40 italic">No data available in this sector</li>
+                              )}
+                            </ul>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Community Sync (Reviews) */}
@@ -584,3 +617,5 @@ export default function PropertyDetails() {
     </div>
   );
 }
+
+
