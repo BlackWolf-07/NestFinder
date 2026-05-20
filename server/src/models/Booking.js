@@ -12,7 +12,7 @@ const Booking = {
 
   getByUser: async (userId) => {
     const [rows] = await db.execute(
-      `SELECT b.*, p.title, p.location, p.city, u.name as ownerName 
+      `SELECT b.*, p.title, p.location, p.city, p.images, u.name as ownerName 
        FROM bookings b 
        JOIN properties p ON b.propertyId = p.id 
        JOIN users u ON b.ownerId = u.id
@@ -24,7 +24,7 @@ const Booking = {
 
   getByOwner: async (ownerId) => {
     const [rows] = await db.execute(
-      `SELECT b.*, p.title, u.name as userName, u.phone as userPhone, u.email as userEmail
+      `SELECT b.*, p.title, p.images, u.name as userName, u.phone as userPhone, u.email as userEmail
        FROM bookings b 
        JOIN properties p ON b.propertyId = p.id 
        JOIN users u ON b.userId = u.id

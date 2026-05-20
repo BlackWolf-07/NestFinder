@@ -30,7 +30,21 @@ exports.getMyBookings = async (req, res) => {
     } else {
       bookings = await Booking.getByUser(req.user.id);
     }
-    res.json({ success: true, bookings });
+
+    const formattedBookings = bookings.map(booking => {
+      let propertyImage = null;
+      if (booking.images) {
+        try {
+          const imgs = typeof booking.images === 'string' ? JSON.parse(booking.images) : booking.images;
+          propertyImage = imgs[0] || null;
+        } catch (e) {
+          console.error("Image parsing failed in booking controller", e);
+        }
+      }
+      return { ...booking, propertyImage, propertyTitle: booking.title };
+    });
+
+    res.json({ success: true, bookings: formattedBookings });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message || 'Failed to fetch bookings' });
   }
@@ -73,3 +87,6 @@ exports.downloadAgreement = async (req, res) => {
     res.status(500).json({ success: false, error: error.message || 'Failed to generate agreement' });
   }
 };
+
+
+
