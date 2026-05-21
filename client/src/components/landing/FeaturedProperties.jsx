@@ -5,8 +5,24 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getFeaturedProperties } from '../../api/property';
 
-const PropertySlide = ({ property }) => {
+import { deleteProperty } from '../../api/property';
+
+const PropertySlide = ({ property, setProperties }) => {
   const navigate = useNavigate();
+
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this property?")) return;
+    try {
+      await deleteProperty(id);
+      if (setProperties) {
+        setProperties((prev) => prev.filter((item) => item.id !== id));
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
+  };
+
   const imageUrl = property.image 
     ? (property.image.startsWith('http') ? property.image : `http://localhost:5000${property.image}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
@@ -62,6 +78,12 @@ const PropertySlide = ({ property }) => {
                    <Bed size={14} className="text-primary" />
                    {property.bhk} BHK
                 </div>
+                <button
+                  onClick={(e) => handleDelete(e, property.id)}
+                  className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-2 py-1 rounded-lg transition-all"
+                >
+                  DELETE
+                </button>
              </div>
              <motion.div
                whileHover={{ x: 5 }}
@@ -116,7 +138,7 @@ export default function FeaturedProperties() {
           <div className="flex gap-8 overflow-x-auto pb-12 px-6 no-scrollbar snap-x">
             {properties.length > 0 ? (
               properties.map((p, i) => (
-                <PropertySlide key={p.id || i} property={p} />
+                <PropertySlide key={p.id || i} property={p} setProperties={setProperties} />
               ))
             ) : (
               <div className="w-full text-center py-20 text-text-muted font-bold italic">

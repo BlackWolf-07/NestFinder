@@ -103,6 +103,13 @@ const Property = {
     await db.execute('DELETE FROM properties WHERE id = ?', [id]);
   },
 
+  deleteById: async (id) => {
+    await db.execute(
+      "DELETE FROM properties WHERE id = ?",
+      [id]
+    );
+  },
+
   initTable: async () => {
     const query = `
       CREATE TABLE IF NOT EXISTS properties (

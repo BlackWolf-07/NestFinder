@@ -1,11 +1,31 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Bed, ShieldCheck, Star, ArrowUpRight } from 'lucide-react';
+import { MapPin, Bed, ShieldCheck, Star, ArrowUpRight, Trash2 } from 'lucide-react';
 import { Card, Badge, PremiumButton } from './UIElements';
 import { formatPrice } from '../utils/formatPrice';
+import { deleteProperty } from "../api/property";
 
-export default function PropertyCard({ property, index = 0 }) {
+export default function PropertyCard({ property, index = 0, setProperties }) {
   const navigate = useNavigate();
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this property?")) return;
+    try {
+      await deleteProperty(id);
+
+      // remove from UI instantly
+      if (setProperties) {
+        setProperties((prev) => {
+          if (Array.isArray(prev)) return prev.filter((item) => item.id !== id);
+          if (prev && prev.properties) return { ...prev, properties: prev.properties.filter(item => item.id !== id) };
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+    }
+  };
+
   const imageUrl = property.image 
     ? (property.image.startsWith('http') ? property.image : `http://localhost:5000/${property.image}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
@@ -73,7 +93,7 @@ export default function PropertyCard({ property, index = 0 }) {
         </div>
 
         <div className="flex justify-between items-center pt-6 border-t border-white/5">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Layout</span>
               <div className="flex items-center gap-2 mt-1">
@@ -81,6 +101,13 @@ export default function PropertyCard({ property, index = 0 }) {
                 <span className="font-black text-white">{property.bhk} BHK</span>
               </div>
             </div>
+            
+            <button
+              onClick={() => handleDelete(property.id)}
+              className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-2 rounded-xl transition-all flex items-center gap-1 text-xs font-black"
+            >
+              <Trash2 size={14} /> DELETE
+            </button>
           </div>
           <motion.button
             whileHover={{ x: 5 }}

@@ -17,31 +17,62 @@ exports.createProperty = async (req, res) => {
       return res.status(400).json({ success: false, error: "No images uploaded." });
     }
 
-    let latitude = req.body.latitude || null;
-    let longitude = req.body.longitude || null;
+    let latitude = null;
+    let longitude = null;
 
-    const fullAddress = req.body.address || req.body.location || `${req.body.locality}, ${req.body.city}`;
+    const locality = req.body.locality || '';
+    const city = req.body.city || '';
+    const address = req.body.address || req.body.location || '';
 
-    // Geocoding logic
-    try {
-      const geoRes = await axios.get('https://nominatim.openstreetmap.org/search', {
-        params: {
-          q: fullAddress,
-          format: 'json',
-          limit: 1
-        },
-        headers: {
-          'User-Agent': 'NestFinder/1.0'
-        }
+    // Robust geocoding helper with India bounds validation
+    const geocode = async (query) => {
+      const res = await axios.get('https://nominatim.openstreetmap.org/search', {
+        params: { q: query, format: 'json', limit: 1, countrycodes: 'in' },
+        headers: { 'User-Agent': 'NestFinder/1.0' },
+        timeout: 5000
       });
-
-      if (geoRes.data && geoRes.data.length > 0) {
-        latitude = geoRes.data[0].lat;
-        longitude = geoRes.data[0].lon;
+      if (res.data && res.data.length > 0) {
+        const lat = parseFloat(res.data[0].lat);
+        const lon = parseFloat(res.data[0].lon);
+        // Validate coordinates are within India
+        if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 97) {
+          return { lat, lon };
+        }
       }
-    } catch (geoErr) {
-      console.error("Geocoding failed:", geoErr.message);
+      return null;
+    };
+
+    try {
+      // Strategy 1: full address + locality + city (most accurate)
+      let result = address
+        ? await geocode(`${address}, ${locality}, ${city}, India`)
+        : null;
+
+      // Strategy 2: locality + city
+      if (!result && locality) {
+        result = await geocode(`${locality}, ${city}, India`);
+      }
+
+      // Strategy 3: city only as last resort
+      if (!result && city) {
+        result = await geocode(`${city}, India`);
+      }
+
+      if (result) {
+        latitude = result.lat;
+        longitude = result.lon;
+      } else {
+        console.warn(`[GEO] Could not geocode: ${address}, ${city}`);
+      }
+    } catch (err) {
+      console.error('[GEO] Geocoding failed:', err.message);
     }
+
+    // Final fallback: Kolkata coordinates
+    latitude = latitude || 22.5726;
+    longitude = longitude || 88.3639;
+
+    console.log('FINAL LAT/LNG:', latitude, longitude);
 
     const propertyData = {
       ...req.body,
@@ -142,15 +173,135 @@ exports.updateProperty = async (req, res) => {
 
 exports.deleteProperty = async (req, res) => {
   try {
-    const property = await Property.getById(req.params.id);
-    if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
-    if (property.ownerId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+    const { id } = req.params;
+    const property = await Property.getById(id);
+    
+    if (!property) {
+      return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    await Property.delete(req.params.id);
-    res.json({ success: true, message: 'Property deleted successfully' });
+    if (property.ownerId !== req.user.id && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    await Property.deleteById(id);
+
+    return res.json({
+      success: true,
+      message: "Property deleted successfully",
+    });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Failed to delete property' });
+    console.error("Delete Property Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete property",
+    });
+  }
+};
+
+exports.getLocationIntelligence = async (req, res) => {
+  try {
+    let { location, city, lat, lon } = req.query;
+
+    if (!lat || !lon || lat === 'null' || lon === 'null' || isNaN(parseFloat(lat))) {
+      try {
+        // Attempt 1: Full Address + City
+        if (location) {
+          const geo = await axios.get("https://nominatim.openstreetmap.org/search", {
+            params: {
+              q: `${location}, ${city || ''}, India`,
+              format: "json",
+              limit: 1
+            },
+            headers: { 'User-Agent': 'NestFinder/1.0' }
+          });
+
+          if (geo.data && geo.data.length > 0) {
+            lat = geo.data[0].lat;
+            lon = geo.data[0].lon;
+          }
+        }
+
+        // Attempt 2: City Fallback
+        if ((!lat || !lon) && city) {
+          const geo = await axios.get("https://nominatim.openstreetmap.org/search", {
+            params: {
+              q: `${city}, India`,
+              format: "json",
+              limit: 1
+            },
+            headers: { 'User-Agent': 'NestFinder/1.0' }
+          });
+
+          if (geo.data && geo.data.length > 0) {
+            lat = geo.data[0].lat;
+            lon = geo.data[0].lon;
+          }
+        }
+      } catch (geoErr) {
+        console.error("Geocoding failed in intelligence fetch:", geoErr.message);
+      }
+    }
+
+    // Ensure valid coordinates exist for radius search - Final Fallback
+    lat = lat || 22.5726;
+    lon = lon || 88.3639;
+
+    let data = {
+      education: [],
+      healthcare: [],
+      connectivity: [],
+      lifestyle: []
+    };
+
+    if (lat && lon) {
+      const overpassQuery = `
+        [out:json];
+        (
+          node["amenity"="school"](around:2000, ${lat}, ${lon});
+          node["amenity"="hospital"](around:2000, ${lat}, ${lon});
+          node["railway"="station"](around:2000, ${lat}, ${lon});
+          node["amenity"="restaurant"](around:2000, ${lat}, ${lon});
+        );
+        out;
+      `;
+
+      try {
+        const response = await axios.post(
+          "https://overpass-api.de/api/interpreter",
+          overpassQuery,
+          { headers: { "Content-Type": "text/plain" } }
+        );
+
+        response.data.elements.forEach(item => {
+          if (item.tags?.amenity === "school") data.education.push(item.tags.name || "Unnamed School");
+          else if (item.tags?.amenity === "hospital") data.healthcare.push(item.tags.name || "Unnamed Hospital");
+          else if (item.tags?.railway === "station" || item.tags?.railway === "subway_entrance") data.connectivity.push(item.tags.name || "Unnamed Station");
+          else if (item.tags?.amenity === "restaurant") data.lifestyle.push(item.tags.name || "Unnamed Restaurant");
+        });
+
+        // Limit each to 3-5 items
+        data.education = data.education.slice(0, 5);
+        data.healthcare = data.healthcare.slice(0, 5);
+        data.connectivity = data.connectivity.slice(0, 5);
+        data.lifestyle = data.lifestyle.slice(0, 5);
+      } catch (overpassErr) {
+        console.error("Overpass API error:", overpassErr.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      data,
+      lat,
+      lon
+    });
+
+  } catch (error) {
+    console.error("Intelligence Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch intelligence data"
+    });
   }
 };

@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
-import { getPropertyDetails } from '../api/property';
+import { getPropertyDetails, deleteProperty } from '../api/property';
+import axios from 'axios';
+
+// ... (rest of imports)
 import { scheduleVisit } from '../api/booking';
 import { addToFavorites, removeFromFavorites, getMyFavorites } from '../api/favorite';
 import { getReviews, addReview } from '../api/review';
@@ -56,12 +59,16 @@ export default function PropertyDetails() {
   }, [property]);
 
   const fetchIntelligence = async () => {
+    if (!property?.address) return;
     setIntelLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/location-intelligence?city=${property.city}&locality=${property.locality}`);
-      const result = await res.json();
-      if (result.success) {
-        setIntelligence(result.data);
+      const res = await axios.get(`/properties/intelligence?location=${encodeURIComponent(property.address)}&city=${encodeURIComponent(property.city)}&locality=${encodeURIComponent(property.locality)}&lat=${property.latitude}&lon=${property.longitude}`);
+      if (res.data.success) {
+        setIntelligence(res.data.data);
+        // Fallback update for coordinates if missing in property but found in intelligence
+        if (!property.latitude && res.data.lat) {
+          setProperty(prev => ({ ...prev, latitude: res.data.lat, longitude: res.data.lon }));
+        }
       }
     } catch (err) {
       console.error('Failed to fetch intelligence', err);
@@ -196,6 +203,9 @@ export default function PropertyDetails() {
   }
 
   const neighborhood = property.neighborhood ? (typeof property.neighborhood === 'string' ? JSON.parse(property.neighborhood) : property.neighborhood) : {};        
+
+  const lat = Number(property.latitude);
+  const lng = Number(property.longitude);
 
   return (
     <div className="bg-background min-h-screen text-white">
@@ -365,7 +375,7 @@ export default function PropertyDetails() {
                                   <div className="w-1.5 h-1.5 bg-white/20 rounded-full" /> {item}
                                 </li>
                               )) : (
-                                <li className="text-xs font-bold text-text-muted/40 italic">No data available in this sector</li>
+                                <li className="text-xs font-bold text-text-muted/40 italic">No nearby data found</li>
                               )}
                             </ul>
                           </div>
@@ -519,26 +529,23 @@ export default function PropertyDetails() {
 
                   <div className="mt-12 h-72 rounded-[40px] overflow-hidden grayscale contrast-150 border-4 border-white/5 relative group">
                     <div className="absolute inset-0 z-10 pointer-events-none border-[20px] border-secondary-dark/80 rounded-[40px] group-hover:opacity-0 transition-opacity" />
-                    {property.latitude && property.longitude ? (
-                      <MapContainer 
-                        center={[parseFloat(property.latitude), parseFloat(property.longitude)]} 
-                        zoom={15} 
-                        style={{ height: '100%', width: '100%' }}
-                        scrollWheelZoom={false}
-                      >       
+                    {lat && lng ? (
+                      <MapContainer
+                        center={[lat, lng]}
+                        zoom={15}
+                        style={{ height: "300px", width: "100%" }}
+                      >
                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        <Marker position={[parseFloat(property.latitude), parseFloat(property.longitude)]}>
-                          <Popup className="font-black text-xs">
-                            <span className="text-primary">{property.title}</span> <br />
-                            <span className="text-gray-500 italic">{property.address || property.location}</span>
+
+                        <Marker position={[lat, lng]}>
+                          <Popup>
+                            {property.title} <br />
+                            {property.address}
                           </Popup>
                         </Marker>
                       </MapContainer>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-secondary/50 text-text-muted">
-                        <MapPin className="w-12 h-12 mb-2 opacity-20" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">Location Coordinates Unavailable</p>
-                      </div>
+                      <p>Accurate location not available</p>
                     )}
                   </div>
                 </div>
