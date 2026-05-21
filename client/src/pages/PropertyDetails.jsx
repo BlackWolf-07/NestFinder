@@ -183,7 +183,7 @@ export default function PropertyDetails() {
   if (!property) return <div className="p-20 text-center text-4xl font-black text-accent italic animate-float">SIGNAL LOST: PROPERTY NOT FOUND</div>;
 
   const imageUrl = property.image 
-    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000/${property.image}`)
+    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000${property.image}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200';
 
   // Safe Amenities Parsing
