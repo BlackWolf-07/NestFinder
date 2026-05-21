@@ -147,6 +147,8 @@ const Property = {
       `ALTER TABLE properties ADD COLUMN latitude DECIMAL(10, 8)`,
       `ALTER TABLE properties ADD COLUMN longitude DECIMAL(11, 8)`,
       `ALTER TABLE properties ADD COLUMN neighborhood JSON`,
+      // Fix corrupted image paths with double slashes in existing records
+      `UPDATE properties SET image = REPLACE(image, '//uploads/', '/uploads/') WHERE image LIKE '//%'`,
     ];
 
     for (const migration of migrations) {

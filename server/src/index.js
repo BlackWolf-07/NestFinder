@@ -21,6 +21,12 @@ const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 
+// Serve uploads BEFORE helmet to prevent security headers blocking static files
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, './uploads')));
+
 // Initialize DB Tables
 const initDB = async () => {
   try {
@@ -36,15 +42,14 @@ const initDB = async () => {
 initDB();
 
 // Middleware
-app.use(helmet());
-app.use(cors());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false,
+}));
+app.use(cors({ origin: '*' }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-}, express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
