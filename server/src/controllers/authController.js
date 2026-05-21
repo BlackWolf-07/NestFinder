@@ -2,9 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const https = require('https');
-
-// Mock OTP storage
-const otpStore = {};
+const db = require('../config/db');
 
 // Improved Phone Normalization
 const normalizePhone = (phone) => {
@@ -99,7 +97,11 @@ exports.sendOtp = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiry = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-    otpStore[phone] = { otp, expiry };
+    // Store OTP in DB — survives restarts
+    await db.execute(
+      'INSERT INTO otp_store (phone, otp, expiry) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE otp = ?, expiry = ?',
+      [phone, otp, expiry, otp, expiry]
+    );
 
     console.log(`[AUTH] OTP for ${phone}: ${otp}`);
 
@@ -118,22 +120,23 @@ exports.verifyOtp = async (req, res) => {
     let { phone, otp } = req.body;
     phone = normalizePhone(phone);
 
-    const storedData = otpStore[phone];
+    const [rows] = await db.execute('SELECT * FROM otp_store WHERE phone = ?', [phone]);
+    const storedData = rows[0];
 
     if (!storedData) {
-        return res.status(400).json({ success: false, error: 'No OTP requested for this number' });
+      return res.status(400).json({ success: false, error: 'No OTP requested for this number' });
     }
 
     if (storedData.expiry < Date.now()) {
-        delete otpStore[phone];
-        return res.status(400).json({ success: false, error: 'OTP expired' });
+      await db.execute('DELETE FROM otp_store WHERE phone = ?', [phone]);
+      return res.status(400).json({ success: false, error: 'OTP expired' });
     }
 
-    if (storedData.otp !== otp) {
-        return res.status(400).json({ success: false, error: 'Invalid OTP' });
+    if (storedData.otp !== otp.toString()) {
+      return res.status(400).json({ success: false, error: 'Invalid OTP' });
     }
 
-    delete otpStore[phone];
+    await db.execute('DELETE FROM otp_store WHERE phone = ?', [phone]);
 
     let user = await User.findByPhone(phone);
     if (!user) {

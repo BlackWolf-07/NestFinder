@@ -44,6 +44,15 @@ const User = {
     `;
     await db.execute(query);
 
+    // Create otp_store table for DB-backed OTP (survives restarts)
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS otp_store (
+        phone VARCHAR(20) PRIMARY KEY,
+        otp VARCHAR(6) NOT NULL,
+        expiry BIGINT NOT NULL
+      ) ENGINE=InnoDB;
+    `);
+
     // FIX: Add isVerified column if it doesn't exist (for existing tables)
     try {
         await db.execute('ALTER TABLE users ADD COLUMN isVerified BOOLEAN DEFAULT FALSE');
