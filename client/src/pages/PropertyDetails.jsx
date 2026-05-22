@@ -44,6 +44,8 @@ export default function PropertyDetails() {
   const [reportReason, setReportReason] = useState('');
   const [intelligence, setIntelligence] = useState(null);
   const [intelLoading, setIntelLoading] = useState(false);
+  
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const { isAuthenticated, user } = useAuthStore();
 
@@ -189,8 +191,27 @@ export default function PropertyDetails() {
 
   if (!property) return <div className="p-20 text-center text-4xl font-black text-accent italic animate-float">SIGNAL LOST: PROPERTY NOT FOUND</div>;
 
-  const imageUrl = property.image 
-    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000${property.image}`)
+  // Safe Images Parsing
+  let images = [];
+  try {
+    images = typeof property.images === 'string' ? JSON.parse(property.images) : (property.images || []);
+  } catch (e) {
+    images = property.image ? [property.image] : [];
+  }
+  if (images.length === 0 && property.image) images = [property.image];
+
+  const nextImage = () => {
+    if (images.length === 0) return;
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevImage = () => {
+    if (images.length === 0) return;
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const currentImageUrl = images.length > 0 
+    ? (images[currentIndex].startsWith('http') ? images[currentIndex] : `http://localhost:5000${images[currentIndex]}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200';
 
   // Safe Amenities Parsing
@@ -253,12 +274,43 @@ export default function PropertyDetails() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="h-[650px] rounded-[48px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative border border-white/10 group"
               >
-                <img
-                  src={imageUrl}
-                  onError={(e) => e.target.src = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200"}
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                />
-                <div className="absolute top-10 left-10 flex flex-col gap-4">
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    src={currentImageUrl}
+                    onError={(e) => e.target.src = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=1200"}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                  />
+                </AnimatePresence>
+
+                {/* Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-black/40 hover:bg-primary backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all z-20"
+                    >
+                      <ChevronLeft className="w-8 h-8" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-black/40 hover:bg-primary backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all z-20"
+                    >
+                      <ChevronRight className="w-8 h-8" />
+                    </button>
+                  </>
+                )}
+
+                {/* Counter */}
+                <div className="absolute bottom-10 right-10 bg-black/50 backdrop-blur-xl px-6 py-3 rounded-2xl border border-white/10 text-xs font-black tracking-widest z-20">
+                  {images.length > 0 ? `${currentIndex + 1} / ${images.length}` : '0 / 0'}
+                </div>
+
+                <div className="absolute top-10 left-10 flex flex-col gap-4 z-20">
                   <Badge variant="glass" className="text-sm px-6 py-3 shadow-2xl">
                     {property.type === 'buy' ? 'Ownership Protocol' : 'Access Lease'}
                   </Badge>
