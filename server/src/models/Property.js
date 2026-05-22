@@ -5,20 +5,20 @@ const Property = {
     const {
       ownerId, title, type, category, location, address, city, locality,
       latitude, longitude, price, bhk, furnishing, amenities,
-      description, image, images, neighborhood, contactNumber, isFeatured
+      description, image, images, neighborhood, contactNumber, isFeatured, email
     } = propertyData;
 
     const [result] = await db.execute(
       `INSERT INTO properties (
         ownerId, title, type, category, location, address, city, locality,
         latitude, longitude, price, bhk, furnishing, amenities,
-        description, image, images, neighborhood, contactNumber, isFeatured, approvalStatus
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        description, image, images, neighborhood, contactNumber, isFeatured, approvalStatus, email
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         ownerId, title, type, category, location, address || null, city, locality,
         latitude || null, longitude || null, price, bhk, furnishing, JSON.stringify(amenities),
         description, image || null, JSON.stringify(images || []), JSON.stringify(neighborhood || {}),
-        contactNumber || null, isFeatured || 0, 'approved'
+        contactNumber || null, isFeatured || 0, 'approved', email || null
       ]
     );
     return result.insertId;
@@ -158,6 +158,7 @@ const Property = {
       `ALTER TABLE properties ADD COLUMN latitude DECIMAL(10, 8)`,
       `ALTER TABLE properties ADD COLUMN longitude DECIMAL(11, 8)`,
       `ALTER TABLE properties ADD COLUMN neighborhood JSON`,
+      `ALTER TABLE properties ADD COLUMN email VARCHAR(255)`,
       // Fix corrupted image paths with double slashes in existing records
       `UPDATE properties SET image = REPLACE(image, '//uploads/', '/uploads/') WHERE image LIKE '//%'`,
     ];

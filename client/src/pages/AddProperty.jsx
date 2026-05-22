@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Upload, Home, MapPin, IndianRupee, Info, Check, Plus, X, Navigation, Phone } from 'lucide-react';
+import { Upload, Home, MapPin, IndianRupee, Info, Check, Plus, X, Navigation, Phone, Mail } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { Card, PremiumButton, Skeleton } from '../components/UIElements';
 import API from '../api';
@@ -34,6 +34,7 @@ const schema = z.object({
   price: z.string().refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Price must be a positive number'),
   bhk: z.string().refine(val => !isNaN(Number(val)) && Number(val) >= 0, 'BHK must be a number'),
   contactNumber: z.string().min(10, 'Contact number must be at least 10 digits'),
+  email: z.string().email('Invalid email address'),
   furnishing: z.enum(['unfurnished', 'semi-furnished', 'fully-furnished']),
   description: z.string().min(20, 'Description must be at least 20 characters'),
 });
@@ -60,7 +61,8 @@ export default function AddProperty() {
       city: '',
       locality: '',
       address: '',
-      contactNumber: ''
+      contactNumber: '',
+      email: ''
     }
   });
 
@@ -84,6 +86,7 @@ export default function AddProperty() {
             price: String(property.price),
             bhk: String(property.bhk),
             contactNumber: property.contactNumber || '',
+            email: property.email || '',
             furnishing: property.furnishing,
             description: property.description
           });
@@ -357,6 +360,19 @@ export default function AddProperty() {
                     />
                   </div>
                   {errors.contactNumber && <p className="text-red-500 text-xs font-bold mt-1">{errors.contactNumber.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-text-muted uppercase tracking-widest">Owner Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                    <input
+                      type="email"
+                      placeholder="e.g. owner@example.com"
+                      {...register('email')}
+                      className={`w-full p-4 pl-12 bg-gray-50 text-gray-900 border-2 rounded-2xl outline-none transition-all font-bold ${errors.email ? 'border-red-500' : 'border-transparent focus:border-primary/20 focus:bg-white'}`}
+                    />
+                  </div>
+                  {errors.email && <p className="text-red-500 text-xs font-bold mt-1">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black text-text-muted uppercase tracking-widest">BHK</label>   

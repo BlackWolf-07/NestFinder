@@ -85,7 +85,8 @@ exports.createProperty = async (req, res) => {
       amenities: typeof req.body.amenities === "string" ? JSON.parse(req.body.amenities) : req.body.amenities,
       location: req.body.location || `${req.body.locality}, ${req.body.city}`,
       latitude,
-      longitude
+      longitude,
+      email: req.body.email || null
     };
 
     const id = await Property.create(propertyData);
@@ -228,6 +229,7 @@ exports.updateProperty = async (req, res) => {
       furnishing: req.body.furnishing || property.furnishing,
       description: req.body.description || property.description,
       contactNumber: req.body.contactNumber || property.contactNumber,
+      email: req.body.email || property.email,
       amenities: req.body.amenities ? (typeof req.body.amenities === 'string' ? JSON.parse(req.body.amenities) : req.body.amenities) : property.amenities,
       image,
       images: allImages,

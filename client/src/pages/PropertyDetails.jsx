@@ -327,6 +327,11 @@ export default function PropertyDetails() {
                 <p className="text-text-muted text-xl leading-[1.6] whitespace-pre-wrap font-medium opacity-80">
                   {property.description}
                 </p>
+                <div className="pt-6 border-t border-white/5">
+                  <p className="text-lg font-bold text-white flex items-center gap-2">
+                    <Mail className="text-primary w-5 h-5" /> <strong>Contact Email:</strong> {property.email}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-8">
