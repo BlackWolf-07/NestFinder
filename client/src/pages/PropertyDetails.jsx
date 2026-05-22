@@ -59,13 +59,13 @@ export default function PropertyDetails() {
   }, [property]);
 
   const fetchIntelligence = async () => {
-    if (!property?.address) return;
+    if (!property?.city && !property?.locality && !property?.address) return;
     setIntelLoading(true);
     try {
-      const res = await axios.get(`/properties/intelligence?location=${encodeURIComponent(property.address)}&city=${encodeURIComponent(property.city)}&locality=${encodeURIComponent(property.locality)}&lat=${property.latitude}&lon=${property.longitude}`);
+      const location = property.address || property.location || `${property.locality}, ${property.city}`;
+      const res = await axios.get(`/api/location-intelligence?location=${encodeURIComponent(location)}&city=${encodeURIComponent(property.city || '')}&locality=${encodeURIComponent(property.locality || '')}&lat=${property.latitude || ''}&lon=${property.longitude || ''}`);
       if (res.data.success) {
         setIntelligence(res.data.data);
-        // Fallback update for coordinates if missing in property but found in intelligence
         if (!property.latitude && res.data.lat) {
           setProperty(prev => ({ ...prev, latitude: res.data.lat, longitude: res.data.lon }));
         }

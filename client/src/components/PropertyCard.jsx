@@ -27,7 +27,7 @@ export default function PropertyCard({ property, index = 0, setProperties }) {
   };
 
   const imageUrl = property.image 
-    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000/${property.image}`)
+    ? (property.image.startsWith('http') ? property.image : `http://localhost:5000${property.image}`)
     : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&q=80&w=800';
 
   return (

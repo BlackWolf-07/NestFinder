@@ -256,35 +256,67 @@ exports.getLocationIntelligence = async (req, res) => {
 
     if (lat && lon) {
       const overpassQuery = `
-        [out:json];
+        [out:json][timeout:25];
         (
-          node["amenity"="school"](around:2000, ${lat}, ${lon});
-          node["amenity"="hospital"](around:2000, ${lat}, ${lon});
-          node["railway"="station"](around:2000, ${lat}, ${lon});
-          node["amenity"="restaurant"](around:2000, ${lat}, ${lon});
+          nwr["amenity"="school"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="college"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="university"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="hospital"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="clinic"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="pharmacy"](around:3000, ${lat}, ${lon});
+          nwr["healthcare"](around:3000, ${lat}, ${lon});
+          node["railway"="station"](around:3000, ${lat}, ${lon});
+          node["railway"="subway_entrance"](around:3000, ${lat}, ${lon});
+          node["station"="subway"](around:3000, ${lat}, ${lon});
+          node["metro"="yes"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="restaurant"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="cafe"](around:3000, ${lat}, ${lon});
+          nwr["amenity"="mall"](around:3000, ${lat}, ${lon});
+          nwr["shop"="mall"](around:3000, ${lat}, ${lon});
         );
-        out;
+        out center;
       `;
 
       try {
         const response = await axios.post(
           "https://overpass-api.de/api/interpreter",
           overpassQuery,
-          { headers: { "Content-Type": "text/plain" } }
+          { headers: { "Content-Type": "text/plain" }, timeout: 30000 }
         );
+        console.log('[INTEL] Raw elements count:', response.data.elements.length);
+        console.log('[INTEL] Sample:', JSON.stringify(response.data.elements.slice(0, 2)));
 
         response.data.elements.forEach(item => {
-          if (item.tags?.amenity === "school") data.education.push(item.tags.name || "Unnamed School");
-          else if (item.tags?.amenity === "hospital") data.healthcare.push(item.tags.name || "Unnamed Hospital");
-          else if (item.tags?.railway === "station" || item.tags?.railway === "subway_entrance") data.connectivity.push(item.tags.name || "Unnamed Station");
-          else if (item.tags?.amenity === "restaurant") data.lifestyle.push(item.tags.name || "Unnamed Restaurant");
+          const name = item.tags?.name || item.tags?.['name:en'] || null;
+          if (!name) return; // skip unnamed places
+
+          const amenity = item.tags?.amenity;
+          const railway = item.tags?.railway;
+          const station = item.tags?.station;
+          const healthcare = item.tags?.healthcare;
+          const shop = item.tags?.shop;
+
+          if (['school', 'college', 'university'].includes(amenity)) {
+            data.education.push(name);
+          } else if (['hospital', 'clinic', 'pharmacy'].includes(amenity) || healthcare) {
+            data.healthcare.push(name);
+          } else if (
+            railway === 'station' ||
+            railway === 'subway_entrance' ||
+            station === 'subway' ||
+            item.tags?.metro === 'yes'
+          ) {
+            data.connectivity.push(name);
+          } else if (['restaurant', 'cafe', 'mall'].includes(amenity) || shop === 'mall') {
+            data.lifestyle.push(name);
+          }
         });
 
-        // Limit each to 3-5 items
-        data.education = data.education.slice(0, 5);
-        data.healthcare = data.healthcare.slice(0, 5);
-        data.connectivity = data.connectivity.slice(0, 5);
-        data.lifestyle = data.lifestyle.slice(0, 5);
+        // Deduplicate and limit
+        data.education = [...new Set(data.education)].slice(0, 5);
+        data.healthcare = [...new Set(data.healthcare)].slice(0, 5);
+        data.connectivity = [...new Set(data.connectivity)].slice(0, 5);
+        data.lifestyle = [...new Set(data.lifestyle)].slice(0, 5);
       } catch (overpassErr) {
         console.error("Overpass API error:", overpassErr.message);
       }
