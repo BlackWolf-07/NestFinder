@@ -158,15 +158,89 @@ exports.getPropertyDetails = async (req, res) => {
 
 exports.updateProperty = async (req, res) => {
   try {
-    const property = await Property.getById(req.params.id);
+    const { id } = req.params;
+    const property = await Property.getById(id);
+    
     if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
     if (property.ownerId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
 
-    await Property.update(req.params.id, req.body);
+    const newImages = req.files && req.files.length > 0
+      ? req.files.map(file => `/uploads/${file.filename}`)
+      : [];
+
+    const existingImages = req.body.existingImages 
+      ? (typeof req.body.existingImages === 'string' ? JSON.parse(req.body.existingImages) : req.body.existingImages)
+      : [];
+
+    const allImages = [...existingImages, ...newImages];
+    const image = allImages.length > 0 ? allImages[0] : property.image;
+
+    let latitude = property.latitude;
+    let longitude = property.longitude;
+
+    const locality = req.body.locality || property.locality;
+    const city = req.body.city || property.city;
+    const address = req.body.address || property.address;
+
+    // Check if location changed to re-geocode
+    if (locality !== property.locality || city !== property.city || address !== property.address) {
+      const geocode = async (query) => {
+        const res = await axios.get('https://nominatim.openstreetmap.org/search', {
+          params: { q: query, format: 'json', limit: 1, countrycodes: 'in' },
+          headers: { 'User-Agent': 'NestFinder/1.0' },
+          timeout: 5000
+        });
+        if (res.data && res.data.length > 0) {
+          const lat = parseFloat(res.data[0].lat);
+          const lon = parseFloat(res.data[0].lon);
+          if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 97) {
+            return { lat, lon };
+          }
+        }
+        return null;
+      };
+
+      try {
+        let result = address
+          ? await geocode(`${address}, ${locality}, ${city}, India`)
+          : await geocode(`${locality}, ${city}, India`);
+
+        if (result) {
+          latitude = result.lat;
+          longitude = result.lon;
+        }
+      } catch (err) {
+        console.error('[GEO] Geocoding failed during update:', err.message);
+      }
+    }
+
+    const updateData = {
+      title: req.body.title || property.title,
+      type: req.body.type || property.type,
+      category: req.body.category || property.category,
+      city: city,
+      locality: locality,
+      address: address,
+      price: req.body.price || property.price,
+      bhk: req.body.bhk || property.bhk,
+      furnishing: req.body.furnishing || property.furnishing,
+      description: req.body.description || property.description,
+      contactNumber: req.body.contactNumber || property.contactNumber,
+      amenities: req.body.amenities ? (typeof req.body.amenities === 'string' ? JSON.parse(req.body.amenities) : req.body.amenities) : property.amenities,
+      image,
+      images: allImages,
+      latitude,
+      longitude,
+      location: `${locality}, ${city}`
+    };
+
+    await Property.update(id, updateData);
+    
     res.json({ success: true, message: 'Property updated successfully' });
   } catch (error) {
+    console.error("Update Property Error:", error);
     res.status(500).json({ success: false, error: 'Failed to update property' });
   }
 };

@@ -15,7 +15,7 @@ router.get('/intelligence', getLocationIntelligence);
 router.get('/:id', getPropertyById);
 
 router.post('/create', auth, upload.array('images', 10), createProperty);
-router.put('/:id', auth, updateProperty);
+router.put('/:id', auth, upload.array('images', 10), updateProperty);
 router.delete('/:id', auth, deleteProperty);
 
 module.exports = router;

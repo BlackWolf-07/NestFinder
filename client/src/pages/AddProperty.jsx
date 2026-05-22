@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Upload, Home, MapPin, IndianRupee, Info, Check, Plus, X, Navigation, Phone } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { Card, PremiumButton, Skeleton } from '../components/UIElements';
 import API from '../api';
+import { getPropertyDetails } from '../api/property';
 
 const CATEGORIES = ['flat', 'house', 'PG', 'hostel', 'commercial'];
 const TYPES = ['rent', 'buy'];
@@ -38,17 +39,19 @@ const schema = z.object({
 });
 
 export default function AddProperty() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
   const [amenities, setAmenities] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   
   const [customCity, setCustomCity] = useState('');
   const [customLocality, setCustomLocality] = useState('');
   const [showAddressField, setShowAddressField] = useState(false);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       type: 'rent',
@@ -64,17 +67,61 @@ export default function AddProperty() {
   const selectedCity = watch('city');
   const selectedLocality = watch('locality');
 
+  useEffect(() => {
+    if (id) {
+      const fetchProperty = async () => {
+        try {
+          const res = await getPropertyDetails(id);
+          const property = res.property || res;
+          
+          reset({
+            title: property.title,
+            type: property.type,
+            category: property.category,
+            city: CITIES_DATA[property.city] ? property.city : 'custom',
+            locality: CITIES_DATA[property.city]?.includes(property.locality) ? property.locality : 'custom',
+            address: property.address,
+            price: String(property.price),
+            bhk: String(property.bhk),
+            contactNumber: property.contactNumber || '',
+            furnishing: property.furnishing,
+            description: property.description
+          });
+
+          if (!CITIES_DATA[property.city]) {
+            setCustomCity(property.city);
+          }
+          if (!CITIES_DATA[property.city]?.includes(property.locality)) {
+            setCustomLocality(property.locality);
+          }
+
+          const parsedAmenities = Array.isArray(property.amenities) ? property.amenities : JSON.parse(property.amenities || '[]');
+          setAmenities(parsedAmenities);
+          
+          const imagesArr = Array.isArray(property.images) ? property.images : JSON.parse(property.images || '[]');
+          setExistingImages(imagesArr);
+          setPreviews(imagesArr.map(img => img.startsWith('http') ? img : `http://localhost:5000${img}`));
+        } catch (error) {
+          console.error("Fetch Error:", error);
+          toast.error("Failed to fetch property details");
+          navigate('/dashboard');
+        }
+      };
+      fetchProperty();
+    }
+  }, [id, reset, navigate]);
+
   // Reset locality if city changes
   useEffect(() => {
-    if (selectedCity !== 'custom') {
+    if (selectedCity !== 'custom' && !id) {
       setValue('locality', '');
       setCustomLocality('');
     }
-  }, [selectedCity, setValue]);
+  }, [selectedCity, setValue, id]);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length + images.length > 10) {
+    if (files.length + images.length + existingImages.length > 10) {
       return toast.error('Maximum 10 images allowed');
     }
     setImages([...images, ...files]);
@@ -83,7 +130,12 @@ export default function AddProperty() {
   };
 
   const removeImage = (index) => {
-    setImages(images.filter((_, i) => i !== index));
+    if (index < existingImages.length) {
+      setExistingImages(existingImages.filter((_, i) => i !== index));
+    } else {
+      const newImageIndex = index - existingImages.length;
+      setImages(images.filter((_, i) => i !== newImageIndex));
+    }
     setPreviews(previews.filter((_, i) => i !== index));
   };
 
@@ -102,7 +154,7 @@ export default function AddProperty() {
     if (!finalCity) return toast.error("City is required");
     if (!finalLocality) return toast.error("Locality is required");
 
-    if (images.length === 0) {
+    if (images.length === 0 && existingImages.length === 0) {
       return toast.error("Please upload at least one image");
     }
 
@@ -116,31 +168,46 @@ export default function AddProperty() {
     });
     formData.append("amenities", JSON.stringify(amenities));
     formData.append("isFeatured", true);
+    
+    if (id) {
+      formData.append("existingImages", JSON.stringify(existingImages));
+    }
+
     images.forEach(img => formData.append("images", img));
 
     try {
-      const response = await API.post("/properties/create", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      toast.success("Property listed successfully!");
-      window.location.href = "/";
+      if (id) {
+        await API.put(`/properties/${id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        toast.success("Property updated successfully!");
+      } else {
+        await API.post("/properties/create", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        toast.success("Property listed successfully!");
+      }
+      navigate("/dashboard");
     } catch (err) {
-      toast.error(err.response?.data?.error || "Failed to create listing");
+      toast.error(err.response?.data?.error || `Failed to ${id ? 'update' : 'create'} listing`);
     } finally {
       setLoading(false);
     }
   };
 
   const isLocalityDisabled = !selectedCity || (selectedCity === 'custom' && !customCity);
-  const isAddressDisabled = isLocalityDisabled || !selectedLocality || (selectedLocality === 'custom' && !customLocality);
 
   return (
     <div className="bg-background min-h-screen">
       <Navbar />
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-10">
-          <h1 className="text-4xl font-black text-secondary tracking-tight mb-2">List Your Property</h1>        
-          <p className="text-text-muted font-medium">Reach thousands of potential residents in minutes.</p>     
+          <h1 className="text-4xl font-black text-secondary tracking-tight mb-2">
+            {id ? 'Edit Your Property' : 'List Your Property'}
+          </h1>        
+          <p className="text-text-muted font-medium">
+            {id ? 'Update your property details to attract more residents.' : 'Reach thousands of potential residents in minutes.'}
+          </p>     
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -387,7 +454,7 @@ export default function AddProperty() {
               disabled={loading}
               className="!px-16 py-6 !rounded-[32px] text-xl shadow-2xl shadow-primary/30"
             >
-              {loading ? 'Publishing Listing...' : 'List My Property Now'}
+              {loading ? (id ? 'Updating...' : 'Publishing Listing...') : (id ? 'Update Property' : 'List My Property Now')}
             </PremiumButton>
           </div>
         </form>

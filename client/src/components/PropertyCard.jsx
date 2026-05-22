@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Bed, ShieldCheck, Star, ArrowUpRight, Trash2 } from 'lucide-react';
+import { MapPin, Bed, ShieldCheck, Star, ArrowUpRight, Trash2, Edit2 } from 'lucide-react';
 import { Card, Badge, PremiumButton } from './UIElements';
 import { formatPrice } from '../utils/formatPrice';
 import { deleteProperty } from "../api/property";
@@ -93,7 +93,7 @@ export default function PropertyCard({ property, index = 0, setProperties }) {
         </div>
 
         <div className="flex justify-between items-center pt-6 border-t border-white/5">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Layout</span>
               <div className="flex items-center gap-2 mt-1">
@@ -102,12 +102,20 @@ export default function PropertyCard({ property, index = 0, setProperties }) {
               </div>
             </div>
             
-            <button
-              onClick={() => handleDelete(property.id)}
-              className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-2 rounded-xl transition-all flex items-center gap-1 text-xs font-black"
-            >
-              <Trash2 size={14} /> DELETE
-            </button>
+            <div className="flex gap-1 ml-2">
+              <button
+                onClick={() => navigate(`/edit-property/${property.id}`)}
+                className="bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white px-3 py-2 rounded-xl transition-all flex items-center gap-1 text-xs font-black"
+              >
+                <Edit2 size={14} /> EDIT
+              </button>
+              <button
+                onClick={() => handleDelete(property.id)}
+                className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-2 rounded-xl transition-all flex items-center gap-1 text-xs font-black"
+              >
+                <Trash2 size={14} /> DELETE
+              </button>
+            </div>
           </div>
           <motion.button
             whileHover={{ x: 5 }}

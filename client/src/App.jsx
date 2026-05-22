@@ -115,6 +115,14 @@ function App() {
               }
             />
             <Route
+              path="/edit-property/:id"
+              element={
+                <ProtectedRoute>
+                  <AddProperty />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin"
               element={
                 <ProtectedRoute roles={['admin']}>

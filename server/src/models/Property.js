@@ -91,6 +91,10 @@ const Property = {
     await db.execute(`UPDATE properties SET ${setClause} WHERE id = ?`, params);
   },
 
+  updateById: async (id, updateData) => {
+    return Property.update(id, updateData);
+  },
+
   approve: async (id, status) => {
     await db.execute('UPDATE properties SET approvalStatus = ? WHERE id = ?', [status, id]);
   },
