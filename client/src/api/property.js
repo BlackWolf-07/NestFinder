@@ -36,3 +36,17 @@ export const deleteProperty = async (id) => {
   const response = await API.delete(`/properties/${id}`);
   return response.data;
 };
+
+export const downloadAgreement = async (id) => {
+  const response = await API.get(`/properties/${id}/agreement`, {
+    responseType: 'blob'
+  });
+  
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `Rental_Agreement_${id}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};

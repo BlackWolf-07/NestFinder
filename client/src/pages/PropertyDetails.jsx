@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
-import { getPropertyDetails, deleteProperty } from '../api/property';
+import { getPropertyDetails, deleteProperty, downloadAgreement } from '../api/property';
 import axios from 'axios';
 
 // ... (rest of imports)
@@ -507,6 +507,15 @@ export default function PropertyDetails() {
                   </form>
 
                   <div className="mt-12 pt-12 border-t border-white/10 space-y-8">
+                    {property.type === 'rent' && isAuthenticated && (
+                      <PremiumButton
+                        onClick={() => downloadAgreement(id)}
+                        variant="glass"
+                        className="w-full !py-4 !rounded-2xl border-primary/30 text-primary-light hover:bg-primary/10"
+                      >
+                        Download Rental Agreement
+                      </PremiumButton>
+                    )}
                     <motion.div whileHover={{ x: 10 }} className="flex items-center gap-5 group cursor-pointer">
                       <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:bg-primary group-hover:border-transparent transition-all shadow-lg">
                         <Phone className="w-6 h-6" />

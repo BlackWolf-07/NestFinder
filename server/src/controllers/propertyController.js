@@ -1,5 +1,35 @@
 const Property = require('../models/Property');
+const User = require('../models/User');
+const { generateAgreement } = require('../utils/pdfGenerator');
 const axios = require('axios');
+
+exports.downloadAgreement = async (req, res) => {
+  try {
+    const property = await Property.getById(req.params.id);
+    if (!property) return res.status(404).json({ success: false, error: 'Property not found' });
+
+    const owner = await User.findById(property.ownerId);
+    const tenant = await User.findById(req.user.id);
+
+    const agreementData = {
+      tenantName: tenant ? tenant.name : 'N/A',
+      ownerName: owner ? owner.name : 'N/A',
+      propertyTitle: property.title,
+      address: property.address || property.location,
+      rentAmount: `${property.price} / month`,
+      date: new Date().toLocaleDateString()
+    };
+
+    const pdfBuffer = await generateAgreement(agreementData);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Rental_Agreement_${property.id}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Agreement Download Error:", error);
+    res.status(500).json({ success: false, error: 'Failed to generate agreement' });
+  }
+};
 
 exports.createProperty = async (req, res) => {
   try {
@@ -168,6 +198,16 @@ exports.updateProperty = async (req, res) => {
     res.json({ success: true, message: 'Property updated successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to update property' });
+  }
+};
+
+exports.verifyProperty = async (req, res) => {
+  try {
+    const { isVerified } = req.body;
+    await Property.verify(req.params.id, isVerified);
+    res.json({ success: true, message: `Property ${isVerified ? 'verified' : 'unverified'} successfully` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to verify property' });
   }
 };
 

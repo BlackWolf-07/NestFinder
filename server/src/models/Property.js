@@ -26,49 +26,69 @@ const Property = {
 
   getFeatured: async () => {
     const [rows] = await db.execute(`
-      SELECT * FROM properties
-      WHERE isFeatured = 1
-      AND (status = 'available' OR status IS NULL)
-      ORDER BY createdAt DESC
+      SELECT p.*, AVG(r.rating) as avgRating 
+      FROM properties p 
+      LEFT JOIN reviews r ON p.id = r.propertyId 
+      WHERE p.isFeatured = 1
+      AND (p.status = 'available' OR p.status IS NULL)
+      GROUP BY p.id
+      ORDER BY p.createdAt DESC
       LIMIT 8
     `);
     return rows;
   },
 
   getAll: async (filters = {}) => {
-    let query = 'SELECT * FROM properties WHERE status = "available"';
+    let query = `
+      SELECT p.*, AVG(r.rating) as avgRating 
+      FROM properties p 
+      LEFT JOIN reviews r ON p.id = r.propertyId 
+      WHERE p.status = "available"
+    `;
     const params = [];
 
     if (filters.city) {
-      query += ' AND city LIKE ?';
+      query += ' AND p.city LIKE ?';
       params.push(`%${filters.city}%`);
     }
     if (filters.locality) {
-      query += ' AND locality LIKE ?';
+      query += ' AND p.locality LIKE ?';
       params.push(`%${filters.locality}%`);
     }
     if (filters.type) {
-      query += ' AND type = ?';
+      query += ' AND p.type = ?';
       params.push(filters.type);
     }
     if (filters.category) {
-      query += ' AND category = ?';
+      query += ' AND p.category = ?';
       params.push(filters.category);
     }
 
-    query += ' ORDER BY createdAt DESC';
+    query += ' GROUP BY p.id ORDER BY p.createdAt DESC';
 
     const [rows] = await db.execute(query, params);
     return rows;
   },
 
   getByOwner: async (ownerId) => {
-    const [rows] = await db.execute('SELECT * FROM properties WHERE ownerId = ?', [ownerId]);
+    const [rows] = await db.execute(`
+      SELECT p.*, AVG(r.rating) as avgRating 
+      FROM properties p 
+      LEFT JOIN reviews r ON p.id = r.propertyId 
+      WHERE p.ownerId = ?
+      GROUP BY p.id
+    `, [ownerId]);
     return rows;
   },
 
   getById: async (id) => {
-    const [rows] = await db.execute('SELECT * FROM properties WHERE id = ?', [id]);
+    const [rows] = await db.execute(`
+      SELECT p.*, AVG(r.rating) as avgRating 
+      FROM properties p 
+      LEFT JOIN reviews r ON p.id = r.propertyId 
+      WHERE p.id = ?
+      GROUP BY p.id
+    `, [id]);
     return rows[0];
   },
 
